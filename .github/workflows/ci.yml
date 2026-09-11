@@ -11,8 +11,8 @@ jobs:
   test:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-dotnet@v6.0.0
         with:
           global-json-file: global.json
       - name: Build all Revit years
@@ -22,7 +22,7 @@ jobs:
       - name: Package installer
         run: .\build\installer\package.ps1 -SkipBuild
       - name: Upload Legacy add-ins
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: Legacy
           path: |
@@ -31,7 +31,7 @@ jobs:
             build/release/2024/
           if-no-files-found: error
       - name: Upload Modern add-ins
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: Modern
           path: |
@@ -39,7 +39,7 @@ jobs:
             build/release/2026/
           if-no-files-found: error
       - name: Upload installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: Installer
           path: build/release/packages/*.zip
