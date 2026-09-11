@@ -19,7 +19,12 @@ GitHub Releases can serve private feeds through the locally authenticated GitHub
 
 ## In action
 
-<!-- screenshot: catalog, DevLoader manager with installed and available versions -->
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/revit-devloader_catalog_dark.png">
+  <img alt="DevLoader catalog inside Revit 2026: five payloads with installed, update available, not installed and version mismatch states" src="docs/screenshots/revit-devloader_catalog_light.png" width="100%">
+</picture>
+
+Captured in Revit 2026 on 2026-09-11 from the internal build the loader was extracted from, so the labels are still in Russian and carry the previous product name. The catalog reads one feed and shows, per payload, which Revit years it supports and whether it is installed, outdated or incompatible with the running Revit.
 
 Live Revit screenshots are pending.
 
