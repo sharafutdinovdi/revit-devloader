@@ -30,7 +30,8 @@ Captured in Revit 2026 on 2026-09-11 from the internal build the loader was extr
 ## Quick start
 
 This checkout is unreleased.
-Windows builds and live Revit validation are pending.
+The Windows builds and Revit 2026 installation are verified.
+Live validation of this build inside Revit is pending.
 Build with the SDK selected by [global.json](global.json).
 
 1. With Revit closed, build and package the add-in on Windows:
@@ -56,6 +57,22 @@ Build with the SDK selected by [global.json](global.json).
 
 A local or HTTPS feed can be set with `feedUrl` in `%LOCALAPPDATA%\RevitDevLoader\settings.properties`.
 See [feed format and publishing](docs/feed-format.md) for package creation and placeholder samples.
+
+The private [demo feed](https://github.com/sharafutdinovdi/revit-devloader/releases/tag/demo-feed) contains RevitDayByDay 1.0.0 and Revit DevLoader 0.1.0 for Revit 2026.
+Accounts with repository access can configure it in `%LOCALAPPDATA%\RevitDevLoader\settings.properties`:
+
+```properties
+feedRepo=sharafutdinovdi/revit-devloader
+feedTag=demo-feed
+feedAsset=feed.json
+runRetentionCount=3
+useLocalUpdatesFallback=false
+```
+
+Both demo packages are application payloads and require a Revit restart after installation.
+The DevLoader payload demonstrates feed delivery of the loader assembly.
+It creates a separate `revit-devloader.addin` and does not replace the bootstrap installation in `RevitDevLoader.addin`.
+Installing it alongside the bootstrap can load both copies; automatic bootstrap self-update is not implemented.
 
 ## How it works
 
@@ -92,6 +109,17 @@ The xUnit suite covers feed parsing, package extraction, registry writes and run
 It also covers settings precedence, assembly path loading and manager row states.
 The ordinary test suite does not require Revit.
 
+The [Windows CI run](https://github.com/sharafutdinovdi/revit-devloader/actions/runs/34612472580) builds both add-in families and runs the core suite.
+The Windows workstation run on 2026-09-11 passed after producing the Revit 2026 release layout:
+
+```text
+Passed!  - Failed:     0, Passed:   141, Skipped:     0, Total:   141, Duration: 1 s - RevitDevLoader.Core.Tests.dll (net8.0)
+```
+
+The Modern and Legacy Release builds each completed with zero warnings and zero errors.
+The core feed reader downloaded the private demo feed through `gh` on Windows.
+The package cache downloaded both Revit 2026 payloads and verified their SHA-256 hashes and sizes.
+
 On Windows:
 
 ```powershell
@@ -103,6 +131,7 @@ dotnet test tests/RevitDevLoader.Core.Tests
 The feed delivery smoke test performs work only when `REVITDEVLOADER_FEED_CHECK=1` is set.
 It uses the configured feed and installs payloads into the current user's loader directories.
 The release layout check is skipped until `build/build-all.ps1` has produced release output.
+CI does not produce that layout and reports 140 passed tests with one skipped check.
 
 <!-- screenshot: tests, successful Windows build and xUnit run -->
 
@@ -118,7 +147,8 @@ The release layout check is skipped until `build/build-all.ps1` has produced rel
 | Build matrix | `Debug.R22` through `Release.R26`, split by add-in family |
 | Revit API references | NuGet packages selected by Revit year |
 
-Configured support still requires Windows build and live Revit validation.
+Plain Release builds are verified on Windows for Revit 2023 and 2026.
+Live Revit validation and builds for the other configured years are pending.
 Replacing an application payload requires restarting Revit.
 Command loading does not unload previously loaded assemblies or reset plugin static state.
 
