@@ -10,19 +10,9 @@ public static class RibbonIconFactory
     private static readonly Brush OnBrandBrush = new SolidColorBrush(DSTokenColors.DSTextOnBrand);
     private static readonly Typeface IconTypeface = new("Segoe UI Semibold");
 
-    public static ImageSource CreateIcon()
-    {
-        return CreateDevIcon();
-    }
-
     public static ImageSource CreateDevIcon()
     {
         return CreateTextIcon("DEV", 7.0);
-    }
-
-    public static ImageSource CreatePluginIcon(string text)
-    {
-        return CreateTextIcon(text, text.Length <= 2 ? 9.2 : 7.0);
     }
 
     public static ImageSource CreateCatalogIcon(string pluginId)

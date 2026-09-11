@@ -1,5 +1,4 @@
 param(
-    # See install.ps1: the year list is not hardcoded - issue #47.
     [ValidatePattern("^20\d{2}$")]
     [string]$RevitVersion = "",
     [switch]$AllVersions,

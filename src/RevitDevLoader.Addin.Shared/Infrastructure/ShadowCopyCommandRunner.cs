@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using RevitDevLoader.Core;
@@ -69,7 +70,8 @@ public sealed class ShadowCopyCommandRunner
         catch (TargetInvocationException exception) when (exception.InnerException is not null)
         {
             _logger.Error("Loaded command threw an exception.", exception.InnerException);
-            throw exception.InnerException;
+            ExceptionDispatchInfo.Capture(exception.InnerException).Throw();
+            throw;
         }
         finally
         {

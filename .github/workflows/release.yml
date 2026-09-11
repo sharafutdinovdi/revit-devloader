@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Build all Revit years
+        run: .\build\build-all.ps1 -SkipTests
+      - name: Test core and release layout
+        run: dotnet test tests/RevitDevLoader.Core.Tests -c Release
+      - name: Package installer
+        run: .\build\installer\package.ps1 -SkipBuild
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:RELEASE_TAG -notmatch '^v(?<version>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)$') {
+            throw 'Release tag must use vMAJOR.MINOR.PATCH with optional prerelease or build metadata.'
+          }
+          $version = $Matches.version
+          $packages = @(Get-ChildItem -LiteralPath build/release/packages -Filter '*.zip' -File)
+          if ($packages.Count -ne 1) { throw 'Expected exactly one installer ZIP.' }
+          $assetPath = Join-Path $packages[0].DirectoryName "revit-devloader-$version.zip"
+          Move-Item -LiteralPath $packages[0].FullName -Destination $assetPath
+          $releaseArgs = @('release', 'create', $env:RELEASE_TAG, $assetPath, '--verify-tag', '--generate-notes', '--title', "Revit DevLoader $version")
+          if ($version -match '-') { $releaseArgs += '--prerelease' }
+          & gh @releaseArgs
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publishing failed.' }

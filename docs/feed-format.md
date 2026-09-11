@@ -66,6 +66,8 @@ Each version supplies:
 
 The parser skips entries missing their release ID, assembly version, assembly name, URL or required entry point.
 A package must list at least one Revit year.
+An unknown `pluginType` or an empty `supportedRevit` list fails conversion of the feed rather than skipping that entry.
+Missing or unparseable `createdUtc` values use the current UTC time.
 A newer feed schema produces a warning in the source result and is still parsed.
 
 [samples/feed.json](../samples/feed.json) shows a complete feed.
@@ -102,7 +104,8 @@ versions=2024,2026
 
 For an application payload, use `pluginType=application` and replace `commandType` with `applicationClass`.
 The reader accepts `pluginName` as a fallback for `pluginId`.
-An omitted or invalid schema number is interpreted as version `1`.
+An omitted or non-integer schema number is interpreted as version `1`.
+Other integer values are retained as supplied.
 Package discovery records the schema number without rejecting newer versions.
 The publishing script requires schema `2`.
 Local discovery scans `*DevPayload*.zip` files in the updates directory and ignores unreadable packages.
@@ -113,6 +116,15 @@ Installed manifests use `.devmanifest` key-value files, not JSON.
 [DevManifestSerializer](../src/RevitDevLoader.Core/DevManifestSerializer.cs) defines their keys.
 The registry writes them during installation.
 They contain machine-specific run and assembly paths and are not portable feed assets.
+The registry format has no `schemaVersion` field.
+Its identity key is `pluginName`, corresponding to the feed's `pluginId`.
+Required keys are `pluginName`, `displayName`, `updatedUtc` and at least one `version.<year>.assemblyPath` entry.
+Command entries require `commandType`; application entries require `applicationClass` and `pluginType=application`.
+An omitted `pluginType` means `command`.
+Optional metadata keys are `releaseId`, `assemblyVersion`, `runRoot`, `packagePath` and `commandSlot`.
+The command slot range is 1-20; applications do not receive a slot.
+Keys are case-insensitive and the last duplicate key wins.
+Unknown keys are ignored.
 
 ## Package and publish
 

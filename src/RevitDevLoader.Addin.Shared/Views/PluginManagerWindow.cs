@@ -340,8 +340,9 @@ public sealed partial class PluginManagerWindow : Window
                 resolvedAssemblyPath,
                 StringComparison.OrdinalIgnoreCase));
         }
-        catch
+        catch (Exception exception)
         {
+            _logger.Error($"Failed to inspect installed assembly for plugin '{pluginId}'.", exception);
             return false;
         }
     }
