@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RevitVersion Condition="'$(RevitVersion)' == '' AND ('$(Configuration)' == '' OR '$(Configuration)' == 'Debug' OR '$(Configuration)' == 'Release')">2023</RevitVersion>
   </PropertyGroup>
-  <Import Project="Sdk.props" Sdk="Nice3point.Revit.Sdk/6.2.3" />
+  <Import Project="Sdk.props" Sdk="Nice3point.Revit.Sdk" />
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
     <RootNamespace>RevitDevLoader</RootNamespace>
@@ -32,5 +32,5 @@
     <Compile Include="..\RevitDevLoader.Addin.Shared\**\*.cs" Link="%(RecursiveDir)%(Filename)%(Extension)" />
     <Page Include="..\RevitDevLoader.Addin.Shared\Resources\*.xaml" Link="Resources\%(Filename)%(Extension)" />
   </ItemGroup>
-  <Import Project="Sdk.targets" Sdk="Nice3point.Revit.Sdk/6.2.3" />
+  <Import Project="Sdk.targets" Sdk="Nice3point.Revit.Sdk" />
 </Project>
