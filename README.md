@@ -26,7 +26,6 @@ GitHub Releases can serve private feeds through the locally authenticated GitHub
 
 Captured in Revit 2026 on 2026-09-11 from the internal build the loader was extracted from, so the labels are still in Russian and carry the previous product name. The catalog reads one feed and shows, per payload, which Revit years it supports and whether it is installed, outdated or incompatible with the running Revit.
 
-Live Revit screenshots are pending.
 
 ## Quick start
 
