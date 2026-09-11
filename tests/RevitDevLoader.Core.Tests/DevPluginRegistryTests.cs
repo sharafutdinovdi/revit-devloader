@@ -114,17 +114,21 @@ public sealed class DevPluginRegistryTests
     }
 
     [Fact]
-    public void ExistingManifestsReceiveSlotsOnFirstStartup()
+    public void ExistingManifestsReceiveSlotsInPluginNameOrderOnFirstStartup()
     {
         var registry = new DevPluginRegistry(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
-        registry.Save(CreateManifest("agr-release", "SampleTool"));
-        registry.Save(CreateManifest("warning-release", "ExampleTool"));
+        registry.Save(CreateManifest("sample-release", "SampleTool"));
+        registry.Save(CreateManifest("example-release", "ExampleTool"));
 
         var errors = registry.EnsureCommandSlots();
 
         Assert.Empty(errors);
-        Assert.Equal(1, registry.Load("SampleTool").CommandSlot);
-        Assert.Equal(2, registry.Load("ExampleTool").CommandSlot);
+        Assert.Equal(1, registry.Load("ExampleTool").CommandSlot);
+        Assert.Equal(2, registry.Load("SampleTool").CommandSlot);
+
+        Assert.Empty(registry.EnsureCommandSlots());
+        Assert.Equal(1, registry.Load("ExampleTool").CommandSlot);
+        Assert.Equal(2, registry.Load("SampleTool").CommandSlot);
     }
 
     [Fact]
