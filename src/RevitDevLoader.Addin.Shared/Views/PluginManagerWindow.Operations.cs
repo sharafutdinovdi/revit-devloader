@@ -177,6 +177,6 @@ public sealed partial class PluginManagerWindow
 
     private void OpenLogsFolder()
     {
-        Process.Start(new ProcessStartInfo { FileName = FileLogger.LogsRoot, UseShellExecute = true });
+        using var process = Process.Start(new ProcessStartInfo { FileName = FileLogger.LogsRoot, UseShellExecute = true });
     }
 }

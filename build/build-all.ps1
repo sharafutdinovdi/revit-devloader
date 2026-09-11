@@ -73,6 +73,7 @@ foreach ($version in $Versions) {
     # DeployAddin stays disabled so builds never write to the local Revit Addins
     # folder; copy the manifest explicitly into the release payload instead.
     Copy-Item $addinManifest (Join-Path $outDir 'RevitDevLoader.addin') -Force
+    Copy-Item -LiteralPath (Join-Path $root 'LICENSE'), (Join-Path $root 'THIRD-PARTY-NOTICES.md') -Destination $outDir -Force
     Write-Host "  -> $outDir" -ForegroundColor Green
 }
 

@@ -29,6 +29,23 @@ The check covers the archive bytes and does not authenticate the publisher.
 
 Downloaded packages are stored under `%LOCALAPPDATA%\RevitDevLoader\cache`.
 Existing cached packages are verified again before use.
+The default local layout is:
+
+```text
+%LOCALAPPDATA%\RevitDevLoader\
+  settings.properties
+  updates\*DevPayload*.zip
+  test-feed\feed.json
+  cache\<pluginId>\<pluginId>-DevPayload-<releaseId>.zip
+  cache\github-release\<owner_repo>\<tag>\<asset>
+  plugins\<pluginId>.devmanifest
+  plugins\<pluginId>\runs\<releaseId>\<year>\
+  Logs\DevLoader-<date>.log
+```
+
+The GitHub feed cache replaces slashes in repository and tag names with underscores.
+`test-feed` is a configurable path, not an automatically selected source.
+Local packages are read at their original path and are not copied into the download cache.
 
 ## Installation and registry
 
@@ -85,7 +102,9 @@ The manager detects matching conventional `.addin` files and displays a warning.
 
 The manager passes `runRetentionCount` to the installer.
 The default is three runs.
-Cleanup preserves the current run and fills the remaining retention slots by directory modification time.
+Cleanup preserves the current run when it exists and fills the remaining retention slots by directory modification time.
+Equal timestamps are ordered by folder name.
+The limit applies to all runs of a plugin, not separately to each Revit year; older runs referenced by another installed year are not separately protected.
 Deletion failures are reported as skipped folders.
 
 Removing a plugin deletes its registry entry and hides its command button.

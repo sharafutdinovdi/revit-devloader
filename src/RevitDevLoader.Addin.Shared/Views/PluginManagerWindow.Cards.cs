@@ -342,6 +342,6 @@ public sealed partial class PluginManagerWindow
             return;
         }
 
-        Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+        using var process = Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
     }
 }

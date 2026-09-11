@@ -166,8 +166,9 @@ internal sealed class PluginSettingsWindow : Window
                 });
             DialogResult = true;
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            Serilog.Log.Error(exception, "Failed to save DevLoader settings at {SettingsPath}.", _settingsPath);
             MessageBox.Show(
                 this,
                 "Could not save settings. Check the repository address, updates folder and write permissions.",
@@ -182,6 +183,6 @@ internal sealed class PluginSettingsWindow : Window
         if (!System.IO.File.Exists(_settingsPath))
             DevLoaderSettingsEditorStore.Save(_settingsPath, DevLoaderSettingsEditorStore.Load(_settingsPath));
 
-        Process.Start(new ProcessStartInfo { FileName = _settingsPath, UseShellExecute = true });
+        using var process = Process.Start(new ProcessStartInfo { FileName = _settingsPath, UseShellExecute = true });
     }
 }

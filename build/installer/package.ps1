@@ -43,6 +43,11 @@ function Assert-ChildPath {
 }
 
 foreach ($version in $versions) {
+    $autodeskAssemblies = @(Get-ChildItem -LiteralPath (Join-Path $releaseRoot $version) -Recurse -File |
+        Where-Object { $_.Name -in @('RevitAPI.dll', 'RevitAPIUI.dll') })
+    if ($autodeskAssemblies.Count -gt 0) {
+        throw "Autodesk API assemblies must not be distributed: $($autodeskAssemblies.FullName -join ', ')"
+    }
     $manifestPath = Join-Path $releaseRoot "$version\RevitDevLoader.addin"
     if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
         throw "Missing DevLoader manifest for Revit $version. Expected: $manifestPath"

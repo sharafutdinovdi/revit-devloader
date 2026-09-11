@@ -15,9 +15,32 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
-      - name: Build legacy add-in
-        run: dotnet build src/RevitDevLoader.Addin.Legacy -c Release
-      - name: Build modern add-in
-        run: dotnet build src/RevitDevLoader.Addin.Modern -c Release
-      - name: Test core
-        run: dotnet test tests/RevitDevLoader.Core.Tests
+      - name: Build all Revit years
+        run: .\build\build-all.ps1 -SkipTests
+      - name: Test core and release layout
+        run: dotnet test tests/RevitDevLoader.Core.Tests -c Release
+      - name: Package installer
+        run: .\build\installer\package.ps1 -SkipBuild
+      - name: Upload Legacy add-ins
+        uses: actions/upload-artifact@v4
+        with:
+          name: Legacy
+          path: |
+            build/release/2022/
+            build/release/2023/
+            build/release/2024/
+          if-no-files-found: error
+      - name: Upload Modern add-ins
+        uses: actions/upload-artifact@v4
+        with:
+          name: Modern
+          path: |
+            build/release/2025/
+            build/release/2026/
+          if-no-files-found: error
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Installer
+          path: build/release/packages/*.zip
+          if-no-files-found: error

@@ -11,5 +11,12 @@ indent_size = 4
 [*.{json,yml,yaml,csproj,addin}]
 indent_size = 2
 
+[*.cmd]
+end_of_line = crlf
+
+[*.cs]
+dotnet_sort_system_directives_first = true
+csharp_style_namespace_declarations = file_scoped:suggestion
+
 [*.md]
 trim_trailing_whitespace = false

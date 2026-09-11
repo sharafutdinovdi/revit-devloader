@@ -97,7 +97,7 @@ public sealed class DevRunRetentionService
         return new DevRunRetentionResult(deleted, skipped, retainedCount);
     }
 
-    private static RunFolder? ReadRunFolder(string path, ICollection<DevRunRetentionSkip> skipped)
+    private RunFolder? ReadRunFolder(string path, ICollection<DevRunRetentionSkip> skipped)
     {
         try
         {
@@ -106,19 +106,21 @@ public sealed class DevRunRetentionService
         }
         catch (Exception exception)
         {
+            _logger.LogWarning(exception, "Failed to inspect run folder. Folder='{Folder}'.", path);
             skipped.Add(new DevRunRetentionSkip(path, exception.Message));
             return null;
         }
     }
 
-    private static int CountExistingDirectories(string runsRoot)
+    private int CountExistingDirectories(string runsRoot)
     {
         try
         {
             return Directory.GetDirectories(runsRoot).Length;
         }
-        catch
+        catch (Exception exception)
         {
+            _logger.LogWarning(exception, "Failed to count remaining run folders. RunsRoot='{RunsRoot}'.", runsRoot);
             return 0;
         }
     }
