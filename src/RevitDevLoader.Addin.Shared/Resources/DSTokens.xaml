@@ -1,0 +1,49 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <SolidColorBrush x:Key="DSBackgroundApp" Color="#F6F8FB" />
+  <SolidColorBrush x:Key="DSBackgroundPanel" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="DSBackgroundHeader" Color="#EEF2F7" />
+  <SolidColorBrush x:Key="DSBackgroundPressed" Color="#E1E5EA" />
+  <SolidColorBrush x:Key="DSBackgroundInput" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="DSBackgroundHover" Color="#E8F1FF" />
+  <SolidColorBrush x:Key="DSBackgroundSelected" Color="#DDEBFF" />
+  <SolidColorBrush x:Key="DSTextPrimary" Color="#17212B" />
+  <SolidColorBrush x:Key="DSTextSecondary" Color="#5A6878" />
+  <SolidColorBrush x:Key="DSTextAccent" Color="#075BFF" />
+  <SolidColorBrush x:Key="DSTextPlaceholder" Color="#89939E" />
+  <SolidColorBrush x:Key="DSTextOnBrand" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="DSBorder" Color="#C8D0DB" />
+  <SolidColorBrush x:Key="DSBorderInput" Color="#89939E" />
+  <SolidColorBrush x:Key="DSBorderFocus" Color="#075BFF" />
+  <SolidColorBrush x:Key="DSActionPrimaryBg" Color="#075BFF" />
+  <SolidColorBrush x:Key="DSActionSecondaryBg" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="DSActionSecondaryBorder" Color="#C8D0DB" />
+  <SolidColorBrush x:Key="DSStatusSuccess" Color="#027A48" />
+  <SolidColorBrush x:Key="DSStatusWarning" Color="#7A3B00" />
+  <SolidColorBrush x:Key="DSStatusError" Color="#B42318" />
+  <SolidColorBrush x:Key="DSStatusSuccessBg" Color="#E6F2ED" />
+  <SolidColorBrush x:Key="DSStatusErrorBg" Color="#FDECEC" />
+
+  <SolidColorBrush x:Key="DSActionButtonBorder" Color="#8095AE" />
+  <SolidColorBrush x:Key="DSActionSecondaryStrongBorder" Color="#8EA4BE" />
+  <SolidColorBrush x:Key="DSActionSecondaryHover" Color="#E8F1FF" />
+  <SolidColorBrush x:Key="DSActionSecondaryPressed" Color="#DDEBFF" />
+  <SolidColorBrush x:Key="DSBrandFooterBg" Color="#075BFF" />
+  <SolidColorBrush x:Key="DSBrandFooterBorder" Color="#0044D8" />
+  <SolidColorBrush x:Key="DSTextOnBrandMuted" Color="#CFE0FF" />
+  <SolidColorBrush x:Key="DSFooterAuxText" Color="#EAF1FF" />
+  <SolidColorBrush x:Key="DSFooterActionBg" Color="#FAFCFF" />
+  <SolidColorBrush x:Key="DSFooterActionFg" Color="#0047FF" />
+  <SolidColorBrush x:Key="DSFooterActionBorder" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="DSFooterActionHover" Color="#EEF4FF" />
+  <SolidColorBrush x:Key="DSFooterActionPressed" Color="#DDE9FF" />
+  <SolidColorBrush x:Key="DSFooterSecondaryBorder" Color="#8DB3FF" />
+  <SolidColorBrush x:Key="DSFooterSecondaryHover" Color="#1B6CFF" />
+  <SolidColorBrush x:Key="DSFooterSecondaryPressed" Color="#004AD8" />
+  <SolidColorBrush x:Key="DSSelectedText" Color="#0A3A70" />
+  <SolidColorBrush x:Key="DSRulePreviewBg" Color="#EFF6FF" />
+  <SolidColorBrush x:Key="DSRulePreviewBgAlternate" Color="#EEF6FF" />
+  <SolidColorBrush x:Key="DSRulePreviewBorder" Color="#BFD4FF" />
+  <SolidColorBrush x:Key="DSStatusWarningBg" Color="#FFF4E5" />
+  <SolidColorBrush x:Key="DSStatusErrorText2" Color="#7A1C12" />
+</ResourceDictionary>

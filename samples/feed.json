@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "channel": "preview",
+  "generatedUtc": "2026-09-11T00:00:00Z",
+  "plugins": [
+    {
+      "pluginId": "SamplePlugin",
+      "displayName": "Sample plugin",
+      "versions": [
+        {
+          "releaseId": "0.1.0",
+          "assemblyVersion": "1.0.0.0",
+          "createdUtc": "2026-09-11T00:00:00Z",
+          "supportedRevit": [
+            "2024",
+            "2026"
+          ],
+          "url": "https://github.com/OWNER/REPO/releases/download/preview/SamplePlugin-DevPayload-0.1.0.zip",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "size": 1,
+          "pluginType": "command",
+          "commandType": "SamplePlugin.Commands.RunCommand",
+          "mainAssembly": "SamplePlugin.dll"
+        }
+      ]
+    }
+  ]
+}

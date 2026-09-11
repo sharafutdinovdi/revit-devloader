@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Build legacy add-in
+        run: dotnet build src/RevitDevLoader.Addin.Legacy -c Release
+      - name: Build modern add-in
+        run: dotnet build src/RevitDevLoader.Addin.Modern -c Release
+      - name: Test core
+        run: dotnet test tests/RevitDevLoader.Core.Tests

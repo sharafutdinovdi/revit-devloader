@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>RevitDevLoader</Name>
+    <Assembly>RevitDevLoader\RevitDevLoader.Addin.Modern.dll</Assembly>
+    <AddInId>D3A5E425-873A-47E5-A564-0134A3A95EC3</AddInId>
+    <FullClassName>RevitDevLoader.App</FullClassName>
+    <VendorId>DSHA</VendorId>
+    <VendorDescription>Dinar Sharafutdinov, https://github.com/sharafutdinovdi/revit-devloader</VendorDescription>
+  </AddIn>
+</RevitAddIns>

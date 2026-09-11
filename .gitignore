@@ -1,0 +1,29 @@
+# .NET
+[Bb]in/
+[Oo]bj/
+.vs/
+.idea/
+*.user
+*.suo
+*.nupkg
+*.snupkg
+TestResults/
+artifacts/
+/output/
+
+# Build sources are versioned even when a global ignore excludes build folders.
+!/build/
+!/build/**
+/build/**/[Bb]in/
+/build/**/[Oo]bj/
+
+/build/release/
+
+# Local data
+.env
+.env.*
+.DS_Store
+*.rvt
+*.rfa
+*.log
+docs/screenshots/raw/
