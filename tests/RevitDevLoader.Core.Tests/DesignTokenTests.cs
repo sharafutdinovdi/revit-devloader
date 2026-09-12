@@ -379,8 +379,8 @@ public sealed class DesignTokenTests
             {
                 lineNumber++;
                 foreach (var pattern in patterns)
-                foreach (Match match in pattern.Matches(line))
-                    yield return new TokenReference(Relative(pluginRoot, file), lineNumber, match.Groups["key"].Value);
+                    foreach (Match match in pattern.Matches(line))
+                        yield return new TokenReference(Relative(pluginRoot, file), lineNumber, match.Groups["key"].Value);
             }
         }
     }
