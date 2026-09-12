@@ -1,0 +1,77 @@
+name: Bug report
+description: Report a reproducible loader, feed or installer problem.
+labels: [bug]
+body:
+  - type: dropdown
+    id: revit-year
+    attributes:
+      label: Revit year
+      options:
+        - '2022'
+        - '2023'
+        - '2024'
+        - '2025'
+        - '2026'
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Add-in version
+      description: Include the DevLoader release tag or commit; add the payload version if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: installation
+    attributes:
+      label: How installed
+      description: State whether DevLoader came from a release installer ZIP, CI artifact or source build, and include the installation command.
+    validations:
+      required: true
+  - type: dropdown
+    id: transport
+    attributes:
+      label: Feed source or transport mode
+      description: Select the source used when discovering or installing a payload, if relevant.
+      options:
+        - GitHub Releases through GitHub CLI
+        - HTTPS feed
+        - Local feed or ZIP
+        - Not applicable or unknown
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the dialog or ribbon command, payload type and whether Revit was restarted.
+      placeholder: |
+        1. Open ...
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log excerpt
+      description: Paste the relevant error text, or state that no log is available. Remove credentials, private feed locations and personal paths.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshot or recording
+      description: Please attach a screenshot of the dialog or ribbon for a visible issue. Drag and drop, paste, or select a screenshot or recording in this field; remove private data.
+      placeholder: Drop a screenshot or recording here.

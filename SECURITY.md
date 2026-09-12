@@ -1,9 +1,11 @@
 # Security policy
 
-Report vulnerabilities to [sharafutdinov.di.dev@outlook.com](mailto:sharafutdinov.di.dev@outlook.com).
+Private vulnerability reporting is enabled for this repository.
+Report vulnerabilities through [Report a vulnerability](https://github.com/sharafutdinovdi/revit-devloader/security/advisories/new).
+Email [sharafutdinov.di.dev@outlook.com](mailto:sharafutdinov.di.dev@outlook.com) if the private reporting form is unavailable.
 Include the affected version and steps to reproduce.
 Do not include credentials or confidential model data.
-Use email for undisclosed vulnerabilities.
+Do not disclose vulnerabilities in public issues or Discussions before coordinated disclosure.
 
 ## Trust boundary
 

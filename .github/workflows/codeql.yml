@@ -1,0 +1,33 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '20 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: CodeQL (csharp)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          global-json-file: global.json
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: csharp
+          build-mode: manual
+      - name: Build all Revit years
+        run: .\build\build-all.ps1 -SkipTests
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:csharp
