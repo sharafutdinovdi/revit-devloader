@@ -262,6 +262,9 @@ public sealed class DevPluginStatusService
                 status.Plugin.MainAssembly);
             if (match is null)
                 return status;
+            if (status.Plugin.PluginType == DevPluginType.Command &&
+                _registry.IsRegisteredApplicationAssemblyPath(match.AssemblyPath))
+                return status;
             if (_registry.IsManagedAssemblyPath(status.Plugin.PluginId, match.AssemblyPath))
                 return status;
 

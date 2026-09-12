@@ -193,6 +193,8 @@ Application installation and removal require a Revit restart to load or unload a
 Run folders remain after uninstall and participate in the configured retention cleanup on subsequent installations.
 Open folder opens the installed run root in Explorer.
 Successful operations appear inline; failures remain modal.
+Conventional installations outside the loader show Managed outside DevLoader and offer no install or uninstall action.
+A command may share a DLL with a registered DevLoader application; running the command does not invoke application startup.
 
 Movement: no signature or animations, instant row-state changes, static icons, standard WPF hover/pressed states and a visible keyboard focus border.
 No animation dependency or code is included (0 KB); system reduced-motion settings do not change this behavior.
