@@ -69,6 +69,8 @@ public sealed class DevUpdateFeed
 
     private static string ResolveIconPath(string source, string? icon)
     {
+        if (icon is null)
+            return string.Empty;
         if (string.IsNullOrWhiteSpace(icon))
             return string.Empty;
         if (icon.IndexOfAny(new[] { '/', '\\', ':', '?', '#', '%' }) >= 0 ||
