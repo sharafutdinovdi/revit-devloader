@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directories:
+      - /
+      - /src/RevitDevLoader.Addin.Legacy
+      - /src/RevitDevLoader.Addin.Modern
+      - /src/RevitDevLoader.Core
+      - /tests/RevitDevLoader.Core.Tests
+    schedule:
+      interval: weekly
+    labels: [dependencies, build]
+    commit-message:
+      prefix: chore(deps)
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies, ci]
+    commit-message:
+      prefix: chore(deps)

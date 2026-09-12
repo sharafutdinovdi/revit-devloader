@@ -2,7 +2,7 @@
 
 Versioned test plugins for Revit, installed from a feed and loaded from separate run folders.
 
-![Status: preview](https://img.shields.io/badge/status-preview-grey?style=flat-square) [![CI](https://img.shields.io/github/actions/workflow/status/sharafutdinovdi/revit-devloader/ci.yml?style=flat-square)](https://github.com/sharafutdinovdi/revit-devloader/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/sharafutdinovdi/revit-devloader?include_prereleases&style=flat-square)](https://github.com/sharafutdinovdi/revit-devloader/releases) ![Revit 2022-2026](https://img.shields.io/badge/Revit-2022--2026-005FB8?style=flat-square) [![MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+![Status: preview](https://img.shields.io/badge/status-preview-grey?style=flat-square) [![CI](https://img.shields.io/github/actions/workflow/status/sharafutdinovdi/revit-devloader/ci.yml?style=flat-square)](https://github.com/sharafutdinovdi/revit-devloader/actions/workflows/ci.yml) [![CodeQL](https://img.shields.io/github/actions/workflow/status/sharafutdinovdi/revit-devloader/codeql.yml?style=flat-square&label=CodeQL)](https://github.com/sharafutdinovdi/revit-devloader/actions/workflows/codeql.yml) [![Release](https://img.shields.io/github/v/release/sharafutdinovdi/revit-devloader?include_prereleases&style=flat-square)](https://github.com/sharafutdinovdi/revit-devloader/releases) ![Revit 2022-2026](https://img.shields.io/badge/Revit-2022--2026-005FB8?style=flat-square) [![MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
 ## What it does
 

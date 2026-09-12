@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-  pull_request:
+  workflow_call:
 
 permissions:
   contents: read
@@ -29,6 +29,7 @@ jobs:
             build/release/2022/
             build/release/2023/
             build/release/2024/
+          retention-days: 90
           if-no-files-found: error
       - name: Upload Modern add-ins
         uses: actions/upload-artifact@v7.0.1
@@ -37,10 +38,12 @@ jobs:
           path: |
             build/release/2025/
             build/release/2026/
+          retention-days: 90
           if-no-files-found: error
       - name: Upload installer
         uses: actions/upload-artifact@v7.0.1
         with:
           name: Installer
           path: build/release/packages/*.zip
+          retention-days: 90
           if-no-files-found: error
