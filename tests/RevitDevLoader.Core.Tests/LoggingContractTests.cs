@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
-using RevitDevLoader.Infrastructure;
 using Microsoft.Extensions.Logging;
+using RevitDevLoader.Infrastructure;
 using Xunit.Abstractions;
 
 namespace RevitDevLoader.Core.Tests;
