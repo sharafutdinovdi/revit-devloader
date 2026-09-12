@@ -25,6 +25,31 @@ public sealed class DevPluginCatalogTests
     }
 
     [Fact]
+    public void CommandCanShareAnAssemblyWithRegisteredApplication()
+    {
+        var root = CreateTempFolder();
+        var registry = new DevPluginRegistry(root);
+        var assemblyPath = Path.Combine(root, "SharedLibrary.dll");
+        registry.Save(new DevPluginManifest("application", "Application", string.Empty, "1.0.0", "1.0.0", root,
+            string.Empty, null, DateTime.UtcNow, new[] { new DevPluginVersionEntry("2026", assemblyPath) },
+            DevPluginType.Application, "SharedLibrary.App"));
+        var addins = CreateTempFolder();
+        new System.Xml.Linq.XDocument(new System.Xml.Linq.XElement("RevitAddIns",
+            new System.Xml.Linq.XElement("AddIn", new System.Xml.Linq.XAttribute("Type", "Application"),
+                new System.Xml.Linq.XElement("Assembly", assemblyPath))))
+            .Save(Path.Combine(addins, "application.addin"));
+        var package = new DevPayloadPackageInfo(Path.Combine(root, "command.zip"), "warnings", "Warnings", "1.0.0", "1.0.0",
+            "SharedLibrary.WarningsCommand", "SharedLibrary.dll", DateTime.UtcNow, new[] { "2026" }, 2);
+
+        var status = new DevPluginStatusService(registry).BuildStatuses(Array.Empty<DevPluginCatalogItem>(), new[] { package }, "2026", addins)
+            .Single(status => status.Plugin.PluginId == "warnings");
+
+        Assert.Equal(DevPluginStatusKind.NotInstalled, status.Kind);
+        Assert.DoesNotContain(DevPluginStatusService.ConventionalInstallWarningPrefix, status.Details);
+        Assert.True(status.CanInstallOrUpdate);
+    }
+
+    [Fact]
     public void HighestCompatibleVersionWinsEvenWhenOlderPackageWasPublishedLater()
     {
         var latest = CreatePackage("1.10.0", DateTime.UtcNow.AddDays(-2), "2026");

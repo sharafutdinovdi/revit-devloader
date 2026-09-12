@@ -40,7 +40,6 @@ public sealed partial class PluginManagerWindow : Window
         Visibility = Visibility.Visible,
         VerticalAlignment = VerticalAlignment.Center
     };
-    private readonly HashSet<string> _shownConventionalWarnings = new(StringComparer.OrdinalIgnoreCase);
     private Button? _checkUpdatesButton;
     private bool _isBusy;
     private bool _isCheckingValue;
@@ -57,18 +56,15 @@ public sealed partial class PluginManagerWindow : Window
         get => _isCheckingValue;
         set
         {
-            var wasChecking = _isCheckingValue;
             _isCheckingValue = value;
             _feedUpdateIndicator.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
-            if (wasChecking && !value && IsLoaded && !_isClosed)
-                ShowConventionalInstallWarnings();
         }
     }
 
     private IReadOnlyList<DevPluginStatus> _allStatuses
     {
         get => _displayStatuses;
-        set => _displayStatuses = AllowConventionalInstallActions(value);
+        set => _displayStatuses = value;
     }
 
     public PluginManagerWindow(ExternalCommandData commandData, FileLogger logger)
@@ -293,87 +289,7 @@ public sealed partial class PluginManagerWindow : Window
                 CheckUpdates();
             else
                 _isChecking = false;
-            ShowConventionalInstallWarnings();
         }), DispatcherPriority.Background);
     }
 
-    private void ShowConventionalInstallWarnings()
-    {
-        var addinsDirectories = PluginAssemblyPathLoader.GetConventionalAddinsDirectories(_revitVersion);
-        var warnings = new List<string>();
-        foreach (var plugin in _allStatuses
-                     .Select(status => status.Plugin)
-                     .GroupBy(item => item.PluginId, StringComparer.OrdinalIgnoreCase)
-                     .Select(group => group.First()))
-        {
-            foreach (var match in PluginAssemblyPathLoader.FindConventionalInstalls(
-                         addinsDirectories,
-                         plugin.MainAssembly))
-            {
-                if (IsCurrentDevLoaderAssembly(plugin.PluginId, match.AssemblyPath))
-                    continue;
-                if (!_shownConventionalWarnings.Add(plugin.PluginId + "|" + match.AddinPath))
-                    continue;
-
-                _logger.Warn($"Conventional add-in detected. PluginId='{plugin.PluginId}'. AddinPath='{match.AddinPath}'. AssemblyPath='{match.AssemblyPath}'. DevLoader actions remain available.");
-                warnings.Add($"{plugin.DisplayName}: {match.AddinPath}");
-            }
-        }
-
-        if (warnings.Count == 0)
-            return;
-
-        MessageBox.Show(
-            this,
-            "A conventional plugin installation was found:\n\n" +
-            string.Join("\n", warnings.Distinct(StringComparer.OrdinalIgnoreCase)) +
-            "\n\nDevLoader will continue. Disable one .addin manifest and restart Revit to avoid loading another copy of the assembly.",
-            "DevLoader",
-            MessageBoxButton.OK,
-            MessageBoxImage.Warning);
-    }
-
-    private bool IsCurrentDevLoaderAssembly(string pluginId, string assemblyPath)
-    {
-        if (!_registry.Exists(pluginId))
-            return false;
-
-        try
-        {
-            var resolvedAssemblyPath = Path.GetFullPath(assemblyPath);
-            return _registry.Load(pluginId).Versions.Any(version => string.Equals(
-                Path.GetFullPath(version.AssemblyPath),
-                resolvedAssemblyPath,
-                StringComparison.OrdinalIgnoreCase));
-        }
-        catch (Exception exception)
-        {
-            _logger.Error($"Failed to inspect installed assembly for plugin '{pluginId}'.", exception);
-            return false;
-        }
-    }
-
-    private static IReadOnlyList<DevPluginStatus> AllowConventionalInstallActions(
-        IReadOnlyList<DevPluginStatus>? statuses)
-    {
-        if (statuses is null)
-            return Array.Empty<DevPluginStatus>();
-
-        return statuses.Select(status =>
-        {
-            var warningIndex = status.Details.IndexOf(
-                DevPluginStatusService.ConventionalInstallWarningPrefix,
-                StringComparison.Ordinal);
-            if (warningIndex < 0)
-                return status;
-
-            return new DevPluginStatus(
-                status.Plugin,
-                status.RevitVersion,
-                status.Installed,
-                status.Available,
-                status.Kind,
-                status.Details.Substring(0, warningIndex).Trim());
-        }).ToList();
-    }
 }

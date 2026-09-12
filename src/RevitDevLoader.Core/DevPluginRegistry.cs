@@ -259,6 +259,26 @@ public sealed class DevPluginRegistry
         return false;
     }
 
+    internal bool IsRegisteredApplicationAssemblyPath(string assemblyPath)
+    {
+        if (string.IsNullOrWhiteSpace(assemblyPath))
+            return false;
+        foreach (var pluginName in GetRegisteredPluginNames())
+        {
+            try
+            {
+                var manifest = Load(pluginName);
+                if (manifest.PluginType == DevPluginType.Application && manifest.Versions.Any(version =>
+                        string.Equals(Path.GetFullPath(version.AssemblyPath), Path.GetFullPath(assemblyPath), StringComparison.OrdinalIgnoreCase)))
+                    return true;
+            }
+            catch (DevManifestException)
+            {
+            }
+        }
+        return false;
+    }
+
     internal bool IsManagedAssemblyPath(string pluginName, string assemblyPath)
     {
         if (string.IsNullOrWhiteSpace(pluginName) || string.IsNullOrWhiteSpace(assemblyPath))
