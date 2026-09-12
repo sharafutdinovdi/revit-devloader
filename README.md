@@ -19,7 +19,9 @@ GitHub Releases can serve private feeds through the locally authenticated GitHub
 
 ## In action
 
-A recording of the catalog, install, update and uninstall flow is being redone and will land here.
+<img alt="DevLoader inside Revit 2026: the DevLoader panel starts with one button; the catalog lists three sample plugins with their icons; Install adds the Hello Plugin button to the ribbon; the plugin runs and shows its dialog; a newer version arrives in the feed, Check for updates offers it and Update installs it; Uninstall removes the registration and hides the button" src="docs/screenshots/revit-devloader_install.gif" width="100%">
+
+Recorded in Revit 2026 against the demo feed published as a GitHub Release of this repository. The three plugins are the samples from `samples/`: Hello Plugin, Element Counter and Level Lister, each a package with its own manifest and icon. What happens, in order: the DevLoader panel holds only `Dev`; the catalog shows the packages from the feed; Install adds the Hello Plugin button with the package icon; the plugin runs; a newer version is published to the feed, Check for updates shows `1.0.0 → 1.1.0` and Update installs it; Uninstall removes the registration and hides the button.
 
 ## Quick start
 

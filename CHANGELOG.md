@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 - 2026-09-12
+
+- Plugin packages with a `plugin.json` manifest, per-year assemblies and PNG icons; v1 key-value packages still load.
+- The DevLoader ribbon panel is generated from installed packages: one button per declared command with the package icon.
+- Three sample plugins in `samples/` (Hello Plugin, Element Counter, Level Lister) with a shared build and `tools/feed/Build-Package.ps1`.
+- Feed registry carries display names, descriptions and icons; `Publish-DevLoaderFeed.ps1` uploads icons with the packages.
+- Documentation: `docs/plugin-package.md`, updated feed format and how-it-works.
+
 ## 0.2.0 - 2026-09-12
 
 - Per-add-in icons from the feed (`icon` asset) or `icon.png` in the package, with a coloured letter fallback.

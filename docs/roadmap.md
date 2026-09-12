@@ -4,6 +4,10 @@ Review date: 2026-09-11.
 
 ## Known gaps
 
+- Ribbon buttons are pre-created slots (20) that are rebound at runtime, because the Revit API only creates ribbon items during startup.
+- Package integrity relies on SHA-256 from the feed over TLS; signed feeds and packages are not implemented.
+- Application packages (IExternalApplication) take effect on the next Revit start.
+- A `dotnet new` template for the sample plugin layout is not published yet.
 - Validate live command execution and application installation in each configured Revit year; the current recording covers application installation in Revit 2026.
 - Add assembly unloading and dependency isolation; loaded assemblies and plugin static state persist until Revit exits.
 - Implement bootstrap self-update; installing the loader as an application payload can create a second loaded copy.
