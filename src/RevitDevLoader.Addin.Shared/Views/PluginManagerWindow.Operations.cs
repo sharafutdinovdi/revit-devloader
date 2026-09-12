@@ -87,16 +87,16 @@ public sealed partial class PluginManagerWindow
         foreach (var skipped in result.RetentionResult.SkippedFolders)
             _logger.Info($"Run retention skipped Folder='{skipped.FolderPath}'. Reason='{skipped.Reason}'.");
 
-        if (result.PluginType == DevPluginType.Application)
-            return result;
-
         if (!_revitApiContextAvailable)
         {
             _logger.Warn($"Ribbon update skipped. PluginId='{status.Plugin.PluginId}'. Reason='Revit API context unavailable'.");
             return result;
         }
 
-        RibbonRuntimeService.EnsurePluginButton(_commandData.Application, status.Plugin, _logger);
+        if (result.PluginType == DevPluginType.Application)
+            RibbonRuntimeService.HidePluginButton(_commandData.Application, result.PluginId, _logger);
+        else
+            RibbonRuntimeService.EnsurePluginButton(_commandData.Application, status.Plugin, _logger);
         return result;
     }
 

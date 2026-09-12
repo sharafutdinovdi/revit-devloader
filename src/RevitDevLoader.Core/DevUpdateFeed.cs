@@ -63,7 +63,8 @@ public sealed class DevUpdateFeed
                 sizeBytes: version.Size,
                 pluginType: pluginType,
                 applicationClass: version.ApplicationClass ?? string.Empty,
-                iconPath: ResolveIconPath(source, plugin.Icon));
+                iconPath: ResolveIconPath(source, plugin.Icon),
+                description: plugin.Description ?? string.Empty);
         }
     }
 
@@ -73,6 +74,10 @@ public sealed class DevUpdateFeed
             return string.Empty;
         if (string.IsNullOrWhiteSpace(icon))
             return string.Empty;
+        if (Uri.TryCreate(icon, UriKind.Absolute, out var iconUri) &&
+            (iconUri.Scheme == Uri.UriSchemeHttps || iconUri.Scheme == "github-release") &&
+            iconUri.AbsolutePath.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            return icon;
         if (icon.IndexOfAny(new[] { '/', '\\', ':', '?', '#', '%' }) >= 0 ||
             !icon.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
             throw new DevManifestException("Feed icon must be a PNG asset name in the same release.");
@@ -116,6 +121,9 @@ public sealed class DevUpdateFeedPlugin
 
     [DataMember(Name = "displayName")]
     public string? DisplayName { get; set; }
+
+    [DataMember(Name = "description", EmitDefaultValue = false)]
+    public string? Description { get; set; }
 
     [DataMember(Name = "icon", EmitDefaultValue = false)]
     public string? Icon { get; set; }

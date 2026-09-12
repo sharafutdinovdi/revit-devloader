@@ -33,14 +33,12 @@ public sealed class DevPayloadInstaller
         var pluginId = ValidatePathSegment(packageInfo.PluginId, "plugin id");
         var releaseId = ValidateReleaseId(packageInfo.ReleaseId);
         var registry = new DevPluginRegistry(localAppDataRoot);
-        int? commandSlot = null;
-        if (packageInfo.PluginType == DevPluginType.Command)
-        {
-            if (!registry.TryGetCommandSlot(pluginId, out var assignedSlot, out var slotError))
-                return DevPayloadInstallResult.Failure(packageInfo.PluginId, packageInfo.DisplayName, slotError);
-
-            commandSlot = assignedSlot;
-        }
+        var requestedCommands = packageInfo.PackageManifest?.Commands ?? (packageInfo.PluginType == DevPluginType.Command
+            ? new List<DevPackageCommand> { new() { Id = "default", Class = packageInfo.CommandType, Text = packageInfo.DisplayName, Tooltip = packageInfo.DisplayName } }
+            : new List<DevPackageCommand>());
+        if (!registry.TryAssignCommandSlots(pluginId, requestedCommands, out var commands, out var slotError))
+            return DevPayloadInstallResult.Failure(packageInfo.PluginId, packageInfo.DisplayName, slotError);
+        var commandSlot = commands.FirstOrDefault()?.Slot;
 
         var resolvedApplicationDataRoot = applicationDataRoot;
         if (packageInfo.PluginType == DevPluginType.Application)
@@ -67,11 +65,23 @@ public sealed class DevPayloadInstaller
         Directory.CreateDirectory(runRoot);
 
         foreach (var version in versions)
-            ExtractVersion(archive, version, runRoot);
+            ExtractVersion(archive, version, runRoot, packageInfo.PackageManifest is not null);
 
         var icon = archive.GetEntry("icon.png");
         if (icon is not null)
             icon.ExtractToFile(Path.Combine(runRoot, "icon.png"));
+
+        if (packageInfo.PackageManifest is not null)
+        {
+            foreach (var entry in archive.Entries.Where(entry => entry.FullName.StartsWith("icons/", StringComparison.Ordinal) || entry.FullName == "plugin.json"))
+            {
+                if (entry.FullName.EndsWith("/", StringComparison.Ordinal))
+                    continue;
+                var destination = EnsureChildPath(runRoot, Path.Combine(runRoot, entry.FullName.Replace('/', Path.DirectorySeparatorChar)));
+                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                entry.ExtractToFile(destination);
+            }
+        }
 
         var manifestVersions = versions
             .Select(version => new DevPluginVersionEntry(version, Path.Combine(runRoot, version, packageInfo.MainAssembly)))
@@ -88,7 +98,10 @@ public sealed class DevPayloadInstaller
             DateTime.UtcNow,
             manifestVersions,
             packageInfo.PluginType,
-            packageInfo.ApplicationClass);
+            packageInfo.ApplicationClass,
+            packageInfo.PackageManifest is null ? "icon.png" : packageInfo.IconPath,
+            packageInfo.Description,
+            commands);
 
         registry.Save(manifest);
         if (packageInfo.PluginType == DevPluginType.Application)
@@ -178,17 +191,25 @@ public sealed class DevPayloadInstaller
 
     private static void ValidateRequiredAssemblies(ZipArchive archive, DevPayloadPackageInfo packageInfo, IEnumerable<string> versions, string packagePath)
     {
+        if (packageInfo.PackageManifest is not null)
+        {
+            var icons = packageInfo.PackageManifest.Commands.Select(command => command.Icon)
+                .Where(path => !string.IsNullOrEmpty(path)).Append(packageInfo.IconPath).Distinct();
+            foreach (var path in icons)
+                if (archive.GetEntry(path) is null)
+                    throw new DevManifestException($"Package icon is missing: {path}");
+        }
         foreach (var version in versions)
         {
-            var requiredEntry = $"payload/{version}/{packageInfo.MainAssembly}";
+            var requiredEntry = packageInfo.PackageManifest?.GetAssemblyEntry(version) ?? $"payload/{version}/{packageInfo.MainAssembly}";
             if (GetEntryByNormalizedName(archive, requiredEntry) is null)
                 throw new DevManifestException($"Dev payload package is missing required Revit {version} assembly '{requiredEntry}': {packagePath}");
         }
     }
 
-    private static void ExtractVersion(ZipArchive archive, string version, string runRoot)
+    private static void ExtractVersion(ZipArchive archive, string version, string runRoot, bool packageV2)
     {
-        var prefix = $"payload/{version}/";
+        var prefix = packageV2 ? $"{version}/" : $"payload/{version}/";
         var destinationRoot = Path.Combine(runRoot, version);
         Directory.CreateDirectory(destinationRoot);
 
@@ -205,8 +226,7 @@ public sealed class DevPayloadInstaller
             if (string.IsNullOrWhiteSpace(relativeName))
                 continue;
 
-            var destinationPath = Path.Combine(destinationRoot, relativeName);
-            EnsureChildPath(destinationRoot, destinationPath);
+            var destinationPath = EnsureChildPath(destinationRoot, Path.Combine(destinationRoot, relativeName));
             var directory = Path.GetDirectoryName(destinationPath);
             if (!string.IsNullOrWhiteSpace(directory))
                 Directory.CreateDirectory(directory);
@@ -244,11 +264,12 @@ public sealed class DevPayloadInstaller
         return value.Trim();
     }
 
-    private static void EnsureChildPath(string parent, string child)
+    private static string EnsureChildPath(string parent, string child)
     {
         var resolvedParent = Path.GetFullPath(parent).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
         var resolvedChild = Path.GetFullPath(child);
         if (!resolvedChild.StartsWith(resolvedParent, StringComparison.OrdinalIgnoreCase))
             throw new DevManifestException($"Path escapes expected folder: {resolvedChild}");
+        return resolvedChild;
     }
 }

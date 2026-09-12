@@ -11,8 +11,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
-$packages = @(Get-ChildItem -LiteralPath $InputDir -File -Filter '*DevPayload*.zip' | Sort-Object Name)
-if ($packages.Count -eq 0) { throw 'InputDir contains no DevPayload packages.' }
+$packages = @(Get-ChildItem -LiteralPath $InputDir -File -Filter '*.zip' | Sort-Object Name)
+if ($packages.Count -eq 0) { throw 'InputDir contains no ZIP packages.' }
 New-Item -ItemType Directory -Force -Path $FeedRoot | Out-Null
 $icons = @{}
 $plugins = [ordered]@{}
@@ -20,16 +20,38 @@ $releaseKeys = @{}
 foreach ($package in $packages) {
     $archive = [System.IO.Compression.ZipFile]::OpenRead($package.FullName)
     try {
-        $entry = $archive.GetEntry('release-info.properties')
-        if ($null -eq $entry) { throw "Missing release-info.properties in $($package.Name)." }
-        $reader = New-Object System.IO.StreamReader($entry.Open())
-        try { $metadata = $reader.ReadToEnd() }
-        finally { $reader.Dispose() }
-        $values = @{}
-        foreach ($line in ($metadata -split '\r?\n')) {
-            if ($line.Trim().StartsWith('#')) { continue }
-            $separator = $line.IndexOf('=')
-            if ($separator -gt 0) { $values[$line.Substring(0, $separator).Trim()] = $line.Substring($separator + 1).Trim() }
+        $jsonEntry = $archive.GetEntry('plugin.json')
+        $iconEntryName = 'icon.png'
+        $assemblyPrefix = 'payload/'
+        if ($null -ne $jsonEntry) {
+            $reader = New-Object System.IO.StreamReader($jsonEntry.Open())
+            try { $manifest = $reader.ReadToEnd() | ConvertFrom-Json }
+            finally { $reader.Dispose() }
+            if ($manifest.schemaVersion -ne 2) { throw 'plugin.json requires schemaVersion 2.' }
+            $packageType = if (@($manifest.commands).Count -eq 0) { 'application' } else { 'command' }
+            $values = @{
+                schemaVersion = '2'; pluginId = $manifest.id; displayName = $manifest.displayName
+                description = $manifest.description; releaseId = $manifest.version; assemblyVersion = $manifest.version
+                createdUtc = $package.LastWriteTimeUtc.ToString('o'); mainAssembly = ($manifest.entry.assembly -split '/', 2)[1]
+                versions = ($manifest.revit -join ','); pluginType = $packageType
+            }
+            if ($packageType -eq 'command') { $values['commandType'] = $manifest.commands[0].class }
+            else { $values['applicationClass'] = $manifest.entry.applicationClass }
+            $iconEntryName = $manifest.icon
+            $assemblyPrefix = ''
+        }
+        else {
+            $entry = $archive.GetEntry('release-info.properties')
+            if ($null -eq $entry) { throw "Missing release-info.properties in $($package.Name)." }
+            $reader = New-Object System.IO.StreamReader($entry.Open())
+            try { $metadata = $reader.ReadToEnd() }
+            finally { $reader.Dispose() }
+            $values = @{}
+            foreach ($line in ($metadata -split '\r?\n')) {
+                if ($line.Trim().StartsWith('#')) { continue }
+                $separator = $line.IndexOf('=')
+                if ($separator -gt 0) { $values[$line.Substring(0, $separator).Trim()] = $line.Substring($separator + 1).Trim() }
+            }
         }
         foreach ($key in @('pluginId', 'releaseId', 'assemblyVersion', 'createdUtc', 'mainAssembly', 'versions')) {
             if (-not $values[$key]) { throw "Missing $key in $($package.Name)." }
@@ -41,13 +63,14 @@ foreach ($package in $packages) {
         if (-not $values[$entryKey]) { throw "Missing $entryKey in $($package.Name)." }
         $versions = @($values['versions'] -split '[,;]' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
         foreach ($year in $versions) {
-            if ($null -eq $archive.GetEntry("payload/$year/$($values['mainAssembly'])")) {
+            if ($null -eq $archive.GetEntry("$assemblyPrefix$year/$($values['mainAssembly'])")) {
                 throw "Missing main assembly for Revit $year in $($package.Name)."
             }
         }
         $pluginId = $values['pluginId']
         if ($pluginId -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') { throw "Unsafe pluginId: $pluginId" }
-        $iconEntry = $archive.GetEntry('icon.png')
+        $iconEntry = $archive.GetEntry($iconEntryName)
+        if ($null -ne $jsonEntry -and $null -eq $iconEntry) { throw "Missing package icon in $($package.Name)." }
         if ($null -ne $iconEntry) {
             $iconName = "$pluginId-icon.png"
             $iconPath = Join-Path (Resolve-Path -LiteralPath $FeedRoot).Path $iconName
@@ -61,9 +84,9 @@ foreach ($package in $packages) {
         $releaseKeys[$releaseKey] = $true
         if (-not $plugins.Contains($pluginId)) {
             $displayName = if ($values['displayName']) { $values['displayName'] } else { $pluginId }
-            $plugins[$pluginId] = [ordered]@{ pluginId = $pluginId; displayName = $displayName; versions = @() }
+            $plugins[$pluginId] = [ordered]@{ pluginId = $pluginId; displayName = $displayName; description = $values['description']; versions = @() }
         }
-        if ($icons.ContainsKey($pluginId)) { $plugins[$pluginId]['icon'] = $icons[$pluginId].Name }
+        if ($icons.ContainsKey($pluginId)) { $plugins[$pluginId]['icon'] = "https://github.com/$Repo/releases/download/$([uri]::EscapeDataString($Tag))/$($icons[$pluginId].Name)" }
         $version = [ordered]@{
             releaseId = $values['releaseId']; assemblyVersion = $values['assemblyVersion']
             createdUtc = $values['createdUtc']; supportedRevit = $versions
@@ -78,7 +101,7 @@ foreach ($package in $packages) {
 
 New-Item -ItemType Directory -Force -Path $FeedRoot | Out-Null
 $feedPath = Join-Path (Resolve-Path -LiteralPath $FeedRoot).Path 'feed.json'
-$feed = [ordered]@{ schemaVersion = 1; channel = $Tag; generatedUtc = [datetime]::UtcNow.ToString('o'); plugins = @($plugins.Values) }
+$feed = [ordered]@{ schemaVersion = 3; channel = $Tag; generatedUtc = [datetime]::UtcNow.ToString('o'); plugins = @($plugins.Values) }
 [System.IO.File]::WriteAllText($feedPath, ($feed | ConvertTo-Json -Depth 10), (New-Object System.Text.UTF8Encoding($false)))
 $uploadArgs = @('release', 'upload', $Tag, '--repo', $Repo, '--clobber') + @($packages.FullName) + @($icons.Values | ForEach-Object { $_.Path })
 if ($DryRun) {

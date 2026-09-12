@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 2,
+  "id": "hello-plugin",
+  "displayName": "Hello Plugin",
+  "version": "1.0.0",
+  "description": "Shows a dialog. The smallest possible DevLoader plugin.",
+  "author": "Dinar Sharafutdinov",
+  "revit": [
+    "2025",
+    "2026"
+  ],
+  "icon": "icons/hello.png",
+  "entry": {
+    "assembly": "2026/HelloPlugin.dll"
+  },
+  "commands": [
+    {
+      "id": "hello",
+      "class": "HelloPlugin.HelloCommand",
+      "text": "Hello\nPlugin",
+      "tooltip": "This is your first plugin",
+      "icon": "icons/hello.png"
+    }
+  ]
+}

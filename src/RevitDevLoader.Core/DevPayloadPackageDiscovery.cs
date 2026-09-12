@@ -9,7 +9,7 @@ namespace RevitDevLoader.Core;
 
 public sealed class DevPayloadPackageDiscovery
 {
-    private const string PackagePattern = "*DevPayload*.zip";
+    private const string PackagePattern = "*.zip";
     private const string ReleaseInfoEntryName = "release-info.properties";
 
     public DevPayloadPackageInfo? FindLatestPackage(string updatesFolder)
@@ -68,6 +68,19 @@ public sealed class DevPayloadPackageDiscovery
         try
         {
             using var archive = ZipFile.OpenRead(packagePath);
+            var packageEntry = archive.GetEntry("plugin.json");
+            if (packageEntry is not null)
+            {
+                using var reader = new StreamReader(packageEntry.Open());
+                var package = DevPackageManifest.Parse(reader.ReadToEnd());
+                return new DevPayloadPackageInfo(packagePath, package.Id, package.DisplayName,
+                    package.Version, package.Version, package.Commands.FirstOrDefault()?.Class ?? "",
+                    package.Entry.Assembly.Substring(package.Entry.Assembly.IndexOf('/') + 1),
+                    File.GetLastWriteTimeUtc(packagePath), package.Revit, 2,
+                    pluginType: package.Commands.Count == 0 ? DevPluginType.Application : DevPluginType.Command,
+                    applicationClass: package.Entry.ApplicationClass, iconPath: package.Icon,
+                    description: package.Description, packageManifest: package);
+            }
             var releaseInfo = archive.GetEntry(ReleaseInfoEntryName);
             if (releaseInfo is null)
                 throw new DevManifestException($"Dev payload package is missing {ReleaseInfoEntryName}: {packagePath}");
