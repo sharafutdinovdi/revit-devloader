@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
@@ -55,8 +56,9 @@ public abstract class RunPluginCommandBase : IExternalCommand
                 return result;
             }
 
-            logger.Info($"Loading CommandType='{manifest.CommandType}'. Assembly='{assemblyPath}'.");
-            result = new ShadowCopyCommandRunner(logger).Run(assemblyPath, manifest.CommandType, commandData, ref message);
+            var commandType = manifest.Commands.Single(command => command.Slot == CommandSlot).Class;
+            logger.Info($"Loading CommandType='{commandType}'. Assembly='{assemblyPath}'.");
+            result = new ShadowCopyCommandRunner(logger).Run(assemblyPath, commandType, commandData, ref message);
             processedCount = 1;
             logger.Info($"Run plugin command completed. PluginId='{pluginId}'. Result='{result}'. Message='{message}'.");
             return result;

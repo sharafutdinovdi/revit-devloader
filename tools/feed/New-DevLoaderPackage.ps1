@@ -8,6 +8,9 @@ param(
     [ValidateSet('command', 'application')] [string]$PluginType = 'command',
     [string]$DisplayName,
     [string]$Icon,
+    [string]$ManifestPath,
+    [string]$Description = "",
+    [string]$Author = "Dinar Sharafutdinov",
     [string]$AssemblyVersion,
     [string]$OutputDir = (Join-Path $PWD 'artifacts/packages')
 )
@@ -23,8 +26,8 @@ if ($Icon) {
     $image = [System.Drawing.Image]::FromFile($Icon)
     try {
         if ($image.RawFormat.Guid -ne [System.Drawing.Imaging.ImageFormat]::Png.Guid -or
-            $image.Width -lt 64 -or $image.Width -ne $image.Height) {
-            throw 'Icon must be a square PNG of at least 64x64 pixels.'
+            $image.Width -ne 32 -or $image.Width -ne $image.Height) {
+            throw 'Icon must be a 32x32 PNG.'
         }
     }
     finally { $image.Dispose() }
@@ -49,34 +52,50 @@ foreach ($value in @($DisplayName, $AssemblyVersion)) {
 }
 
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
-$archivePath = Join-Path (Resolve-Path -LiteralPath $OutputDir).Path "$PluginId-DevPayload-$Version.zip"
+$archivePath = Join-Path (Resolve-Path -LiteralPath $OutputDir).Path "$PluginId-$Version.zip"
 if (Test-Path -LiteralPath $archivePath) { throw "Package already exists: $archivePath" }
 $stagingRoot = Join-Path (Resolve-Path -LiteralPath $OutputDir).Path ('.staging-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $stagingRoot | Out-Null
 try {
-    $lines = @(
-        'schemaVersion=2', "pluginId=$PluginId", "displayName=$DisplayName",
-        "releaseId=$Version", "assemblyVersion=$AssemblyVersion",
-        "createdUtc=$([datetime]::UtcNow.ToString('o'))", "pluginType=$PluginType",
-        "mainAssembly=$MainAssembly", "versions=$(($versions.Name) -join ',')"
-    )
-    $entryKey = if ($PluginType -eq 'application') { 'applicationClass' } else { 'commandType' }
-    $lines += "$entryKey=$EntryPoint"
-    $metadataPath = Join-Path $stagingRoot 'release-info.properties'
-    [System.IO.File]::WriteAllLines($metadataPath, $lines, (New-Object System.Text.UTF8Encoding($false)))
+    if ($ManifestPath) {
+        $manifest = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json
+        if ($manifest.schemaVersion -ne 2 -or $manifest.id -ne $PluginId) { throw 'Manifest schema or id mismatch.' }
+        $manifest.version = $Version
+        $manifest.revit = @($versions.Name)
+    }
+    else {
+        $entry = [ordered]@{ assembly = "$($versions[-1].Name)/$MainAssembly" }
+        $commands = @()
+        if ($PluginType -eq 'application') { $entry['applicationClass'] = $EntryPoint }
+        else { $commands = @([ordered]@{ id = 'default'; class = $EntryPoint; text = $DisplayName; tooltip = $Description; icon = 'icons/icon.png' }) }
+        $manifest = [ordered]@{
+            schemaVersion = 2; id = $PluginId; displayName = $DisplayName; version = $Version
+            description = $Description; author = $Author; revit = @($versions.Name)
+            icon = 'icons/icon.png'; entry = $entry; commands = $commands
+        }
+        if (-not $Icon) { throw 'A v2 package requires -Icon or -ManifestPath with an icons folder.' }
+    }
+    $metadataPath = Join-Path $stagingRoot 'plugin.json'
+    [System.IO.File]::WriteAllText($metadataPath, ($manifest | ConvertTo-Json -Depth 10), (New-Object System.Text.UTF8Encoding($false)))
     $temporaryArchive = Join-Path $stagingRoot 'package.zip'
     $archive = [System.IO.Compression.ZipFile]::Open($temporaryArchive, [System.IO.Compression.ZipArchiveMode]::Create)
     try {
-        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $metadataPath, 'release-info.properties') | Out-Null
+        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $metadataPath, 'plugin.json') | Out-Null
         if ($Icon) {
-            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $Icon, 'icon.png') | Out-Null
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $Icon, 'icons/icon.png') | Out-Null
+        }
+        if ($ManifestPath) {
+            $iconRoot = Join-Path (Split-Path -Parent (Resolve-Path -LiteralPath $ManifestPath).Path) 'icons'
+            foreach ($file in Get-ChildItem -LiteralPath $iconRoot -File -Filter '*.png') {
+                [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $file.FullName, "icons/$($file.Name)") | Out-Null
+            }
         }
         foreach ($year in $versions) {
             $prefix = $year.FullName.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
             foreach ($file in Get-ChildItem -LiteralPath $year.FullName -File -Recurse) {
                 if ($file.Extension -eq '.pdb') { continue }
                 $relative = $file.FullName.Substring($prefix.Length).Replace('\', '/')
-                [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $file.FullName, "payload/$($year.Name)/$relative") | Out-Null
+                [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $file.FullName, "$($year.Name)/$relative") | Out-Null
             }
         }
     }

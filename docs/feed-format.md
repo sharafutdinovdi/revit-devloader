@@ -44,14 +44,15 @@ See [discovery behavior](how-it-works.md#discovery).
 ## Feed JSON
 
 [DevUpdateFeed](../src/RevitDevLoader.Core/DevUpdateFeed.cs) defines the serialized fields.
-The supported feed schema version is `1`.
+The supported feed schema version is `3`; older schema 1 feeds remain readable.
 The top-level object contains `schemaVersion`, `channel`, `generatedUtc` and `plugins`.
-Each plugin has `pluginId`, `displayName` and `versions`.
-Optional `icon` is a PNG asset filename in the same release, for example `"icon": "sample-icon.png"`.
-It must be square and at least 64x64 pixels; paths and external URLs are rejected.
-The catalog displays it at 40x40 with rounded corners.
-If the asset is absent or unreadable, an installed package's root `icon.png` is used when available.
-Otherwise the first display-name letter appears on a fixed eight-color palette selected deterministically from `pluginId`.
+Each plugin has `pluginId`, `displayName`, `description`, `icon` and `versions`.
+`icon` is an HTTPS or `github-release://` PNG asset URL, or a relative PNG filename in the same release.
+The publisher copies the 32x32 package icon to `<pluginId>-icon.png` and writes its HTTPS asset URL.
+Installed rows use the installed package icon, matching the ribbon; uninstalled rows load the feed asset.
+The catalog accepts square PNGs of at least 32 pixels, including older 64px icons.
+An unavailable image falls back to the display-name initial on the existing deterministic palette.
+Descriptions appear as the catalog name tooltip.
 
 Each version supplies:
 
@@ -87,42 +88,14 @@ A newer feed schema produces a warning in the source result and is still parsed.
 It is a JSON fragment for the feed, not an installed registry manifest.
 Replace the sample URL, hash and size with values from a real package.
 
-## Payload ZIP
+## Package ZIP
 
-The supported payload schema version is `2`.
-Each archive contains:
-
-```text
-release-info.properties
-icon.png                     # optional
-payload/2024/SamplePlugin.dll
-payload/2026/SamplePlugin.dll
-```
-
-Other files under a year folder are extracted with its main assembly.
-The optional root `icon.png` is extracted to the run root.
-The package metadata uses key-value lines:
-
-```properties
-schemaVersion=2
-pluginId=SamplePlugin
-displayName=Sample plugin
-releaseId=0.1.0
-assemblyVersion=1.0.0.0
-createdUtc=2026-09-11T00:00:00Z
-pluginType=command
-commandType=SamplePlugin.Commands.RunCommand
-mainAssembly=SamplePlugin.dll
-versions=2024,2026
-```
-
-For an application payload, use `pluginType=application` and replace `commandType` with `applicationClass`.
-The reader accepts `pluginName` as a fallback for `pluginId`.
-An omitted or non-integer schema number is interpreted as version `1`.
-Other integer values are retained as supplied.
-Package discovery records the schema number without rejecting newer versions.
-The publishing script requires schema `2`.
-Local discovery scans `*DevPayload*.zip` files in the updates directory and ignores unreadable packages.
+New packages use [plugin.json v2](plugin-package.md) at the archive root with `<year>/` DLL folders and `icons/`.
+The feed schema and package schema are independent: feed 3 describes package 2.
+Legacy `release-info.properties` packages under `payload/<year>/` remain supported, including properties schema 1 and 2.
+Their root `icon.png` remains usable.
+The current publisher accepts historical properties schema 2 and new `plugin.json` packages.
+Local discovery scans `*.zip` files and ignores unreadable archives.
 
 ## Installed registry manifest
 
@@ -136,14 +109,15 @@ Required keys are `pluginName`, `displayName`, `updatedUtc` and at least one `ve
 Command entries require `commandType`; application entries require `applicationClass` and `pluginType=application`.
 An omitted `pluginType` means `command`.
 Optional metadata keys are `releaseId`, `assemblyVersion`, `runRoot`, `packagePath` and `commandSlot`.
-The command slot range is 1-20; applications do not receive a slot.
+The command slot range is 1-20; each declared command consumes one slot and applications do not receive a slot.
+Additional `iconPath`, `descriptionBase64` and `commandsBase64` keys retain package presentation and per-command slot bindings.
 Keys are case-insensitive and the last duplicate key wins.
 Unknown keys are ignored.
 
 ## Package and publish
 
-Prepare a payload folder containing year directories and their compiled plugin files.
-Create a package on Windows:
+Build a sample package with `.\tools\feed\Build-Package.ps1 -Project .\samples\HelloPlugin`.
+For existing compiled year folders, create a package on Windows:
 
 ```powershell
 .\tools\feed\New-DevLoaderPackage.ps1 `
@@ -152,10 +126,13 @@ Create a package on Windows:
   -Version 0.1.0 `
   -MainAssembly SamplePlugin.dll `
   -EntryPoint SamplePlugin.Commands.RunCommand `
-  -Icon C:\payload\icon.png
+  -Icon C:\payload\icon.png `
+  -Description "Shows the sample command"
 ```
 
-The script reads the assembly version from the newest year folder unless `-AssemblyVersion` is supplied.
+The icon must be 32x32 PNG.
+`-ManifestPath` supplies a complete template with multiple commands and an adjacent icons folder.
+The package version comes from `-Version`.
 It excludes PDB files and refuses to replace an existing package of the same name.
 The returned object includes the archive path, SHA-256 and byte size.
 Use `-PluginType application` for an application entry point.
@@ -174,7 +151,7 @@ The publisher extracts package icons as `<pluginId>-icon.png` assets and writes 
 For multiple packages of a plugin, the most recently created package carrying an icon supplies the asset.
 Packages and icons upload before `feed.json`.
 The publisher reads the packages in `InputDir` and includes each unique plugin and release pair.
-It writes `artifacts/feed/feed.json` with relative asset names and calculated hashes and sizes.
+It writes `artifacts/feed/feed.json` with relative ZIP asset names, absolute icon asset URLs and calculated hashes and sizes.
 A repeated plugin and release pair is rejected.
 `-DryRun` generates the feed and prints the upload command without invoking GitHub CLI.
 
@@ -185,7 +162,7 @@ Use a new version for changed payload bytes to avoid stale package caches.
 
 ## Catalog operations
 
-Command installation adds or re-enables its button immediately in Add-Ins > DevLoader.
+Command installation adds or re-enables each declared button immediately in Add-Ins > DevLoader.
 Updating reuses the assigned command slot and the runner reads the current registry entry on every click.
 Uninstall removes registration and hides and disables the command button; Revit exposes visibility and enabled flags but no ribbon-item removal method.
 Loaded assemblies remain in the process until Revit exits.
@@ -198,3 +175,23 @@ A command may share a DLL with a registered DevLoader application; running the c
 
 Movement: no signature or animations, instant row-state changes, static icons, standard WPF hover/pressed states and a visible keyboard focus border.
 No animation dependency or code is included (0 KB); system reduced-motion settings do not change this behavior.
+
+## Demo channel
+
+The `demo-feed` release initially lists Hello Plugin, Element Counter and Level Lister at 1.0.0.
+All support Revit 2025 and 2026.
+`hello-plugin-1.1.0.zip` is uploaded but absent from the initial `feed.json`.
+`feed-with-update.json` adds Hello 1.1.0 while preserving its 1.0.0 version.
+
+After installing and running Hello 1.0.0, replace the feed asset from a temporary directory:
+
+```powershell
+gh release download demo-feed --repo sharafutdinovdi/revit-devloader --pattern feed-with-update.json
+Copy-Item .\feed-with-update.json .\feed.json
+gh release upload demo-feed .\feed.json --repo sharafutdinovdi/revit-devloader --clobber
+```
+
+In the manager, select **Check for updates**, then **Update** on Hello Plugin.
+Close the manager to run the updated command, then reopen it and select **Uninstall**.
+The row returns to Install and its ribbon button is hidden and disabled.
+The initial disk state does not alter an already loaded host; staging a host under `RevitDevLoader.next` requires the owner to activate it with Revit closed.

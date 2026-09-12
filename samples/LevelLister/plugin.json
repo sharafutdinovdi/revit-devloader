@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 2,
+  "id": "level-lister",
+  "displayName": "Level Lister",
+  "version": "1.0.0",
+  "description": "Lists model levels and elevations in millimeters.",
+  "author": "Dinar Sharafutdinov",
+  "revit": [
+    "2025",
+    "2026"
+  ],
+  "icon": "icons/levels.png",
+  "entry": {
+    "assembly": "2026/LevelLister.dll"
+  },
+  "commands": [
+    {
+      "id": "levels",
+      "class": "LevelLister.ListLevelsCommand",
+      "text": "Level\nLister",
+      "tooltip": "Lists model levels and elevations in millimeters.",
+      "icon": "icons/levels.png"
+    }
+  ]
+}

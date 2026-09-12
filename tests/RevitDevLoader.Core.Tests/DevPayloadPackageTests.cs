@@ -8,6 +8,132 @@ namespace RevitDevLoader.Core.Tests;
 public sealed class DevPayloadPackageTests
 {
     [Fact]
+    public void PackageV2InstallsMultipleCommandsAndRebindsUpdatesByCommandId()
+    {
+        var root = CreateTempFolder();
+        var package = CreateV2Package(root, "1.0.0", new[] { "hello", "count" });
+        var installer = new DevPayloadInstaller();
+        var first = installer.Install(package, root, new[] { "2025", "2026" });
+        Assert.True(first.IsSuccess);
+        var registry = new DevPluginRegistry(root);
+        var installed = registry.Load("hello-plugin");
+        Assert.Equal(2, installed.Commands.Count);
+        Assert.Equal(2, installed.Commands.Select(command => command.Slot).Distinct().Count());
+        Assert.Contains(Path.Combine("2025", "HelloPlugin.dll"), installed.GetAssemblyPath("2025"));
+        Assert.Contains(Path.Combine("2026", "HelloPlugin.dll"), installed.GetAssemblyPath("2026"));
+        Assert.True(File.Exists(Path.Combine(first.RunRoot, "plugin.json")));
+        Assert.True(File.Exists(Path.Combine(first.RunRoot, "icons", "hello@16.png")));
+        Assert.Equal("icons/hello.png", installed.IconPath);
+        Assert.Equal("Hello\nPlugin", installed.Commands[0].Text);
+        var countSlot = installed.Commands[1].Slot;
+
+        var update = CreateV2Package(root, "1.1.0", new[] { "count", "levels" });
+        Assert.True(installer.Install(update, root, new[] { "2026" }).IsSuccess);
+        installed = registry.Load("hello-plugin");
+        Assert.Equal(countSlot, installed.Commands[0].Slot);
+        Assert.DoesNotContain(installed.Commands, command => command.Id == "hello");
+        Assert.True(registry.TryLoadByCommandSlot(countSlot!.Value, out var resolved, out _));
+        Assert.Equal("1.1.0", resolved!.ReleaseId);
+        Assert.Empty(registry.EnsureCommandSlots());
+        Assert.Equal(2, registry.Load("hello-plugin").Commands.Count);
+        Assert.True(registry.Delete("hello-plugin"));
+        Assert.False(registry.TryLoadByCommandSlot(countSlot.Value, out _, out _));
+        Assert.True(installer.Install(update, root, new[] { "2026" }).IsSuccess);
+        Assert.Equal(2, registry.Load("hello-plugin").Commands.Count);
+    }
+
+    [Theory]
+    [InlineData("2026/../HelloPlugin.dll", "icons/hello.png")]
+    [InlineData("HelloPlugin.dll", "icons/hello.png")]
+    [InlineData("2026/HelloPlugin.dll", "../hello.png")]
+    [InlineData("2026/HelloPlugin.dll", "icons/../hello.png")]
+    [InlineData("2026/HelloPlugin.dll", "icons/hello.svg")]
+    public void PackageV2RejectsUnsafePaths(string assembly, string icon)
+    {
+        var root = CreateTempFolder();
+        var package = CreateV2Package(root, "1.0.0", new[] { "hello" }, assembly, icon);
+        Assert.Throws<DevManifestException>(() => new DevPayloadInstaller().Install(package, root, new[] { "2026" }));
+        Assert.Empty(new DevPluginRegistry(root).GetRegisteredPluginNames());
+    }
+
+    [Fact]
+    public void PackageV2RejectsDuplicateCommandsMissingIconsAndUnsupportedYears()
+    {
+        var root = CreateTempFolder();
+        var duplicate = CreateV2Package(root, "1.0.0", new[] { "hello", "hello" });
+        Assert.Throws<DevManifestException>(() => new DevPayloadPackageDiscovery().ReadPackageInfo(duplicate));
+        var package = CreateV2Package(root, "1.1.0", new[] { "hello" });
+        Assert.Throws<DevManifestException>(() => new DevPayloadInstaller().Install(package, root, new[] { "2024" }));
+        using (var archive = ZipFile.Open(package, ZipArchiveMode.Update))
+            archive.GetEntry("icons/hello.png")!.Delete();
+        Assert.Throws<DevManifestException>(() => new DevPayloadInstaller().Install(package, root, new[] { "2026" }));
+        Assert.Empty(new DevPluginRegistry(root).GetRegisteredPluginNames());
+    }
+
+    [Fact]
+    public void PackageV2RejectsIconArchiveTraversalBeforeRegistration()
+    {
+        var root = CreateTempFolder();
+        var package = CreateV2Package(root, "1.0.0", new[] { "hello" });
+        using (var archive = ZipFile.Open(package, ZipArchiveMode.Update))
+        using (var writer = new StreamWriter(archive.CreateEntry("icons/../../escaped.dll").Open()))
+            writer.Write("outside package");
+
+        Assert.Throws<DevManifestException>(() => new DevPayloadInstaller().Install(package, root, new[] { "2026" }));
+        Assert.Empty(new DevPluginRegistry(root).GetRegisteredPluginNames());
+        Assert.Empty(Directory.GetFiles(root, "escaped.dll", SearchOption.AllDirectories));
+    }
+
+    [Fact]
+    public void PackageV2RejectsSlotExhaustionWithoutPartialRegistration()
+    {
+        var root = CreateTempFolder();
+        var package = CreateV2Package(root, "1.0.0", Enumerable.Range(1, 21).Select(number => "command" + number).ToArray());
+        var result = new DevPayloadInstaller().Install(package, root, new[] { "2026" });
+        Assert.False(result.IsSuccess);
+        Assert.Empty(new DevPluginRegistry(root).GetRegisteredPluginNames());
+    }
+
+    [Fact]
+    public void PackageV2ApplicationUsesNoCommandSlots()
+    {
+        var root = CreateTempFolder();
+        var package = CreateV2Package(root, "1.0.0", Array.Empty<string>());
+        var result = new DevPayloadInstaller().Install(package, root, new[] { "2026" }, applicationDataRoot: root);
+        Assert.True(result.IsSuccess);
+        var installed = new DevPluginRegistry(root).Load("hello-plugin");
+        Assert.Equal(DevPluginType.Application, installed.PluginType);
+        Assert.Empty(installed.Commands);
+        Assert.Null(installed.CommandSlot);
+    }
+
+    private static string CreateV2Package(string root, string version, string[] commandIds,
+        string assembly = "2026/HelloPlugin.dll", string icon = "icons/hello.png")
+    {
+        var package = new DevPackageManifest
+        {
+            SchemaVersion = 2,
+            Id = "hello-plugin",
+            DisplayName = "Hello Plugin",
+            Version = version,
+            Revit = new List<string> { "2025", "2026" },
+            Icon = icon,
+            Entry = new DevPackageEntry { Assembly = assembly, ApplicationClass = commandIds.Length == 0 ? "HelloPlugin.App" : "" },
+            Commands = commandIds.Select(id => new DevPackageCommand { Id = id, Class = "HelloPlugin." + id, Text = "Hello\nPlugin", Icon = icon }).ToList()
+        };
+        var path = Path.Combine(root, "hello-plugin-" + version + ".zip");
+        using var archive = ZipFile.Open(path, ZipArchiveMode.Create);
+        using (var writer = new StreamWriter(archive.CreateEntry("plugin.json").Open()))
+            writer.Write(package.Serialize());
+        foreach (var entry in new[] { "2025/HelloPlugin.dll", "2026/HelloPlugin.dll", "icons/hello.png", "icons/hello@16.png" })
+        {
+            using var writer = new StreamWriter(archive.CreateEntry(entry).Open());
+            writer.Write("fixture");
+        }
+        return path;
+    }
+
+    [Fact]
     public void InstallerRetainsRootIconInRunFolder()
     {
         var root = CreateTempFolder();

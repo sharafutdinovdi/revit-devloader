@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 2,
+  "id": "element-counter",
+  "displayName": "Element Counter",
+  "version": "1.0.0",
+  "description": "Counts elements in the active view by category.",
+  "author": "Dinar Sharafutdinov",
+  "revit": [
+    "2025",
+    "2026"
+  ],
+  "icon": "icons/counter.png",
+  "entry": {
+    "assembly": "2026/ElementCounter.dll"
+  },
+  "commands": [
+    {
+      "id": "counter",
+      "class": "ElementCounter.CountCommand",
+      "text": "Element\nCounter",
+      "tooltip": "Counts elements in the active view by category.",
+      "icon": "icons/counter.png"
+    }
+  ]
+}

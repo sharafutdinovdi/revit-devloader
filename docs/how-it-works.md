@@ -4,8 +4,8 @@
 
 The built-in catalog is empty.
 [DevPluginStatusService](../src/RevitDevLoader.Core/DevPluginStatusService.cs) combines packages with registered plugins.
-It selects the latest compatible package by creation time.
-Command plugins receive one of the slots defined by `DevPluginRegistry.CommandSlotCount`.
+It selects the highest compatible numeric release version, using assembly version and creation time as fallbacks.
+Each declared command receives one of the slots defined by `DevPluginRegistry.CommandSlotCount`.
 Application plugins do not consume command slots.
 
 [DevUpdateSourceService](../src/RevitDevLoader.Core/DevUpdateSourceService.cs) reads the configured feed.
@@ -34,7 +34,7 @@ The default local layout is:
 ```text
 %LOCALAPPDATA%\RevitDevLoader\
   settings.properties
-  updates\*DevPayload*.zip
+  updates\*.zip
   test-feed\feed.json
   cache\<pluginId>\<pluginId>-DevPayload-<releaseId>.zip
   cache\github-release\<owner_repo>\<tag>\<asset>
@@ -49,8 +49,11 @@ Local packages are read at their original path and are not copied into the downl
 
 ## Installation and registry
 
-[DevPayloadInstaller](../src/RevitDevLoader.Core/DevPayloadInstaller.cs) reads `release-info.properties` from the ZIP.
+[DevPayloadInstaller](../src/RevitDevLoader.Core/DevPayloadInstaller.cs) reads root `plugin.json` from a v2 ZIP, or legacy `release-info.properties` when JSON is absent.
 It checks that every requested Revit year has the declared main assembly.
+For v2, it replaces the first year component in `entry.assembly` with the requested year.
+For example, `2026/HelloPlugin.dll` selects `2025/HelloPlugin.dll` in Revit 2025, with no cross-year fallback.
+Icons and the original `plugin.json` are retained beside the installed year folders.
 Files are extracted into:
 
 ```text
@@ -84,6 +87,22 @@ The package cache also checks its resulting path against the cache root.
 These checks apply to the paths shown in the implementation.
 They are not a sandbox for loaded code.
 Feeds, local settings and payload assemblies must come from trusted sources.
+
+## Ribbon generation
+
+The host creates the DevLoader panel under Add-Ins with only the Dev manager button when nothing is installed.
+At startup and after installation, it reads registered manifests and creates one pushbutton per installed command.
+`commands[].text`, `tooltip` and `icon` supply presentation; the package icon is the fallback for an omitted command icon.
+The 32px image supplies `LargeImage`; an optional `@16.png` sibling supplies `Image`.
+Application packages have no command buttons.
+The feed publisher exports the same package icon bytes for uninstalled catalog rows.
+
+Updates preserve command IDs and their slots, rebind current metadata and hide commands removed from the package.
+The runner resolves the selected slot's class and current assembly path on every click.
+Uninstall hides and disables all buttons for the package; the Revit API cannot remove ribbon items.
+Reinstall reuses existing button identities.
+The fixed host provides 20 slots across all installed commands.
+See [plugin packages](plugin-package.md) for format and rendering rules.
 
 ## Command loading
 

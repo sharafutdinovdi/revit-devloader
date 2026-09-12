@@ -1,0 +1,15 @@
+<Project Sdk="Nice3point.Revit.Sdk">
+  <PropertyGroup>
+    <ImplicitRevitUsings>false</ImplicitRevitUsings>
+    <DeployAddin>false</DeployAddin>
+    <LaunchRevit>false</LaunchRevit>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*" />
+    <PackageReference Include="Nice3point.Revit.Toolkit" Version="2025.0.0" Condition="'$(RevitVersion)' == '2025'" />
+    <PackageReference Include="Nice3point.Revit.Toolkit" Version="2026.0.0" Condition="'$(RevitVersion)' == '2026'" />
+    <PackageReference Include="Nice3point.Revit.Extensions" Version="2025.2.4" Condition="'$(RevitVersion)' == '2025'" />
+    <PackageReference Include="Nice3point.Revit.Extensions" Version="2026.1.4" Condition="'$(RevitVersion)' == '2026'" />
+  </ItemGroup>
+</Project>
