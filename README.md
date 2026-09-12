@@ -19,13 +19,13 @@ GitHub Releases can serve private feeds through the locally authenticated GitHub
 
 ## In action
 
-<img alt="DevLoader inside Revit 2026: the catalog lists two payloads from a GitHub Releases feed, RevitDayByDay is installed with one click and shows as installed" src="docs/screenshots/revit-devloader_install.gif" width="100%">
+<img alt="DevLoader inside Revit 2026: a catalog of five add-ins from a GitHub Releases feed; two are installed with one click each, then the feed is refreshed" src="docs/screenshots/revit-devloader_install.gif" width="100%">
 
-Recorded in Revit 2026 on 2026-09-11 against the demo feed published as a GitHub Release of this repository: open the catalog from the Add-Ins tab, install a payload, and the row turns to installed with a reinstall option. Application payloads are picked up by Revit on the next start.
+Recorded in Revit 2026 against the demo feed published as a GitHub Release of this repository: RevitLookup, Revit Model MCP, Revit Day by Day and two ricaun-io sample add-ins, all real Revit 2026 builds under MIT. Two rows are installed during the recording and the feed is refreshed at the end. Application payloads are picked up by Revit on the next start.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/revit-devloader_catalog_dark.png">
-  <img alt="DevLoader catalog in Revit 2026 with one payload installed" src="docs/screenshots/revit-devloader_catalog_light.png" width="100%">
+  <img alt="DevLoader catalog in Revit 2026 with four of five payloads installed" src="docs/screenshots/revit-devloader_catalog_light.png" width="100%">
 </picture>
 
 ## Quick start
