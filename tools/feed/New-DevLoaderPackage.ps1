@@ -7,6 +7,7 @@ param(
     [Parameter(Mandatory)] [ValidatePattern('^[A-Za-z_][A-Za-z0-9_.+]*$')] [string]$EntryPoint,
     [ValidateSet('command', 'application')] [string]$PluginType = 'command',
     [string]$DisplayName,
+    [string]$Icon,
     [string]$AssemblyVersion,
     [string]$OutputDir = (Join-Path $PWD 'artifacts/packages')
 )
@@ -15,6 +16,19 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+if ($Icon) {
+    $Icon = (Resolve-Path -LiteralPath $Icon).Path
+    Add-Type -AssemblyName System.Drawing
+    $image = [System.Drawing.Image]::FromFile($Icon)
+    try {
+        if ($image.RawFormat.Guid -ne [System.Drawing.Imaging.ImageFormat]::Png.Guid -or
+            $image.Width -lt 64 -or $image.Width -ne $image.Height) {
+            throw 'Icon must be a square PNG of at least 64x64 pixels.'
+        }
+    }
+    finally { $image.Dispose() }
+}
 
 $payloadRoot = (Resolve-Path -LiteralPath $PayloadFolder).Path
 $versions = @(Get-ChildItem -LiteralPath $payloadRoot -Directory |
@@ -37,7 +51,7 @@ foreach ($value in @($DisplayName, $AssemblyVersion)) {
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
 $archivePath = Join-Path (Resolve-Path -LiteralPath $OutputDir).Path "$PluginId-DevPayload-$Version.zip"
 if (Test-Path -LiteralPath $archivePath) { throw "Package already exists: $archivePath" }
-$stagingRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('revit-devloader-' + [guid]::NewGuid().ToString('N'))
+$stagingRoot = Join-Path (Resolve-Path -LiteralPath $OutputDir).Path ('.staging-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $stagingRoot | Out-Null
 try {
     $lines = @(
@@ -54,6 +68,9 @@ try {
     $archive = [System.IO.Compression.ZipFile]::Open($temporaryArchive, [System.IO.Compression.ZipArchiveMode]::Create)
     try {
         [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $metadataPath, 'release-info.properties') | Out-Null
+        if ($Icon) {
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $Icon, 'icon.png') | Out-Null
+        }
         foreach ($year in $versions) {
             $prefix = $year.FullName.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
             foreach ($file in Get-ChildItem -LiteralPath $year.FullName -File -Recurse) {

@@ -8,6 +8,23 @@ namespace RevitDevLoader.Core.Tests;
 public sealed class DevPayloadPackageTests
 {
     [Fact]
+    public void InstallerRetainsRootIconInRunFolder()
+    {
+        var root = CreateTempFolder();
+        var packagePath = Path.Combine(root, "ExampleCommand-DevPayload-icon.zip");
+        CreatePayloadZip(packagePath, "icon", DateTime.UtcNow, include2024: false, include2026: true);
+        var iconBytes = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a4S8AAAAASUVORK5CYII=");
+        using (var archive = ZipFile.Open(packagePath, ZipArchiveMode.Update))
+        using (var stream = archive.CreateEntry("icon.png").Open())
+            stream.Write(iconBytes, 0, iconBytes.Length);
+
+        var result = new DevPayloadInstaller().Install(packagePath, root, new[] { "2026" }, 3, root);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(iconBytes, File.ReadAllBytes(Path.Combine(result.RunRoot, "icon.png")));
+    }
+
+    [Fact]
     public void DefaultUpdatesFolderUsesLocalApplicationDataRoot()
     {
         var path = DevUpdateLocations.GetDefaultUpdatesFolder(@"C:\Users\tester\AppData\Local");

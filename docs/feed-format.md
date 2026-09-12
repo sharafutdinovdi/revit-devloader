@@ -47,6 +47,11 @@ See [discovery behavior](how-it-works.md#discovery).
 The supported feed schema version is `1`.
 The top-level object contains `schemaVersion`, `channel`, `generatedUtc` and `plugins`.
 Each plugin has `pluginId`, `displayName` and `versions`.
+Optional `icon` is a PNG asset filename in the same release, for example `"icon": "sample-icon.png"`.
+It must be square and at least 64x64 pixels; paths and external URLs are rejected.
+The catalog displays it at 40x40 with rounded corners.
+If the asset is absent or unreadable, an installed package's root `icon.png` is used when available.
+Otherwise the first display-name letter appears on a fixed eight-color palette selected deterministically from `pluginId`.
 
 Each version supplies:
 
@@ -54,7 +59,7 @@ Each version supplies:
 |---|---|
 | `releaseId` | Release identifier used for cache and run paths. |
 | `assemblyVersion` | Displayed assembly version. |
-| `createdUtc` | Timestamp used to order available releases. |
+| `createdUtc` | Tie breaker for releases with equal or unparseable versions. |
 | `supportedRevit` | Revit years as strings. |
 | `url` | Archive path or URL, absolute or relative to the feed. |
 | `sha256` | SHA-256 of the ZIP bytes. An absent hash disables verification. |
@@ -66,6 +71,13 @@ Each version supplies:
 
 The parser skips entries missing their release ID, assembly version, assembly name, URL or required entry point.
 A package must list at least one Revit year.
+The highest numeric `releaseId` compatible with the running Revit year is selected first.
+Numeric versions accept an optional `v` prefix and two to four components; missing components compare as zero.
+For nonnumeric release IDs, numeric `assemblyVersion` determines update ordering.
+Equal versions offer Reinstall; a greater feed version offers Update and displays the installed-to-available version pair.
+An older feed version offers no install action.
+The catalog first shows saved feed data; Check for updates fetches the current feed.
+With no saved packages, opening the catalog checks automatically.
 An unknown `pluginType` or an empty `supportedRevit` list fails conversion of the feed rather than skipping that entry.
 Missing or unparseable `createdUtc` values use the current UTC time.
 A newer feed schema produces a warning in the source result and is still parsed.
@@ -82,11 +94,13 @@ Each archive contains:
 
 ```text
 release-info.properties
+icon.png                     # optional
 payload/2024/SamplePlugin.dll
 payload/2026/SamplePlugin.dll
 ```
 
 Other files under a year folder are extracted with its main assembly.
+The optional root `icon.png` is extracted to the run root.
 The package metadata uses key-value lines:
 
 ```properties
@@ -137,7 +151,8 @@ Create a package on Windows:
   -PluginId SamplePlugin `
   -Version 0.1.0 `
   -MainAssembly SamplePlugin.dll `
-  -EntryPoint SamplePlugin.Commands.RunCommand
+  -EntryPoint SamplePlugin.Commands.RunCommand `
+  -Icon C:\payload\icon.png
 ```
 
 The script reads the assembly version from the newest year folder unless `-AssemblyVersion` is supplied.
@@ -155,6 +170,9 @@ Generate and inspect the feed before uploading:
   -DryRun
 ```
 
+The publisher extracts package icons as `<pluginId>-icon.png` assets and writes each plugin's `icon` field.
+For multiple packages of a plugin, the most recently created package carrying an icon supplies the asset.
+Packages and icons upload before `feed.json`.
 The publisher reads the packages in `InputDir` and includes each unique plugin and release pair.
 It writes `artifacts/feed/feed.json` with relative asset names and calculated hashes and sizes.
 A repeated plugin and release pair is rejected.
@@ -164,3 +182,17 @@ Create the target GitHub release separately and authenticate with `gh auth login
 Run the publisher without `-DryRun` to upload packages and `feed.json` to that release.
 Uploads use `--clobber` and replace same-named assets.
 Use a new version for changed payload bytes to avoid stale package caches.
+
+## Catalog operations
+
+Command installation adds or re-enables its button immediately in Add-Ins > DevLoader.
+Updating reuses the assigned command slot and the runner reads the current registry entry on every click.
+Uninstall removes registration and hides and disables the command button; Revit exposes visibility and enabled flags but no ribbon-item removal method.
+Loaded assemblies remain in the process until Revit exits.
+Application installation and removal require a Revit restart to load or unload application behavior.
+Run folders remain after uninstall and participate in the configured retention cleanup on subsequent installations.
+Open folder opens the installed run root in Explorer.
+Successful operations appear inline; failures remain modal.
+
+Movement: no signature or animations, instant row-state changes, static icons, standard WPF hover/pressed states and a visible keyboard focus border.
+No animation dependency or code is included (0 KB); system reduced-motion settings do not change this behavior.

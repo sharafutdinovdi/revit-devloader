@@ -16,6 +16,9 @@ namespace RevitDevLoader.Views;
 public sealed partial class PluginManagerWindow : Window
 {
     private const double SurfaceCornerRadius = 8;
+    private readonly Dictionary<string, string> _operationStatuses = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, System.Threading.Tasks.Task<ImageSource?>> _iconTasks = new(StringComparer.Ordinal);
+
 
     private readonly ExternalCommandData _commandData;
     private readonly FileLogger _logger;
@@ -286,7 +289,10 @@ public sealed partial class PluginManagerWindow : Window
                 return;
 
             LoadCachedRows();
-            CheckUpdates();
+            if (_availablePackages.Count == 0)
+                CheckUpdates();
+            else
+                _isChecking = false;
             ShowConventionalInstallWarnings();
         }), DispatcherPriority.Background);
     }

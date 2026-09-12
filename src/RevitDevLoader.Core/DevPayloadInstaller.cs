@@ -69,6 +69,10 @@ public sealed class DevPayloadInstaller
         foreach (var version in versions)
             ExtractVersion(archive, version, runRoot);
 
+        var icon = archive.GetEntry("icon.png");
+        if (icon is not null)
+            icon.ExtractToFile(Path.Combine(runRoot, "icon.png"));
+
         var manifestVersions = versions
             .Select(version => new DevPluginVersionEntry(version, Path.Combine(runRoot, version, packageInfo.MainAssembly)))
             .ToList();

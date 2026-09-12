@@ -32,16 +32,13 @@ public sealed partial class PluginManagerWindow
                 return;
             }
 
-            var version = DevReleaseDisplayFormatter.Format(result.ReleaseId, result.AssemblyVersion);
-            var message = $"{status.Plugin.DisplayName}: installed version {version}.";
+            var message = $"✓ Installed {result.ReleaseId} just now";
             if (result.PluginType == DevPluginType.Application)
+            {
+                message += ". Restart Revit to load it.";
                 _logger.Info($"Revit restart required to load application plugin. PluginId='{status.Plugin.PluginId}'.");
-            MessageBox.Show(
-                this,
-                message,
-                "DevLoader",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            }
+            _operationStatuses[status.Plugin.PluginId] = message;
         }
         catch (Exception exception)
         {
@@ -108,15 +105,6 @@ public sealed partial class PluginManagerWindow
         if (_isBusy || status.Installed is null)
             return;
 
-        var confirmation = MessageBox.Show(
-            this,
-            $"Remove {status.Plugin.DisplayName} from DevLoader?",
-            "DevLoader",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-        if (confirmation != MessageBoxResult.Yes)
-            return;
-
         try
         {
             var removed = _registry.Delete(
@@ -137,6 +125,9 @@ public sealed partial class PluginManagerWindow
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
+            _operationStatuses[status.Plugin.PluginId] = status.Installed.PluginType == DevPluginType.Application
+                ? "✓ Uninstalled. Restart Revit to unload it. Run folder retained."
+                : "✓ Uninstalled. Ribbon button hidden. Run folder retained.";
             RebuildStatusesFromCurrentPackages();
         }
         catch (Exception exception)

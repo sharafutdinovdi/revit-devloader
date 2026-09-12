@@ -100,6 +100,13 @@ internal sealed class PluginManagerRowState
                 string.Empty,
                 "Update available",
                 PluginManagerPrimaryAction.Update),
+            DevPluginStatusKind.Latest when status.HasNewerInstalledVersion => new PluginManagerRowState(
+                status,
+                "Installed",
+                PluginManagerStatusIcon.Installed,
+                "Installed version is newer than the feed.",
+                "Installed version is newer than the feed.",
+                PluginManagerPrimaryAction.None),
             DevPluginStatusKind.Latest => new PluginManagerRowState(
                 status,
                 "Installed",
@@ -187,14 +194,14 @@ internal sealed class PluginManagerRowState
             status.Installed is not null &&
             status.Available is not null)
         {
-            return $"Version {FormatVersion(status.Installed.AssemblyVersion)}";
+            return $"{FormatVersion(status.Installed.ReleaseId)} → {FormatVersion(status.Available.ReleaseId)}";
         }
 
         if (status.Installed is not null)
-            return $"Version {FormatVersion(status.Installed.AssemblyVersion)}";
+            return $"Version {FormatVersion(status.Installed.ReleaseId)}";
 
         return status.Available is not null
-            ? $"Version {FormatVersion(status.Available.AssemblyVersion)}"
+            ? $"Version {FormatVersion(status.Available.ReleaseId)}"
             : "Version unavailable";
     }
 

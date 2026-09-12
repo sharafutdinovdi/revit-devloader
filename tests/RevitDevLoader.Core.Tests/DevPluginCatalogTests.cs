@@ -4,6 +4,37 @@ namespace RevitDevLoader.Core.Tests;
 
 public sealed class DevPluginCatalogTests
 {
+    [Theory]
+    [InlineData("1.0.0", "1.1.0", DevPluginStatusKind.UpdateAvailable)]
+    [InlineData("1.9.0", "1.10.0", DevPluginStatusKind.UpdateAvailable)]
+    [InlineData("1.1.0", "1.1.0", DevPluginStatusKind.Latest)]
+    [InlineData("1.1.0.0", "1.1.0", DevPluginStatusKind.Latest)]
+    [InlineData("2.0.0", "1.1.0", DevPluginStatusKind.Latest)]
+    public void StatusComparesReleaseVersionsWithoutOfferingDowngrades(string installedVersion, string feedVersion, DevPluginStatusKind expected)
+    {
+        var root = CreateTempFolder();
+        var registry = new DevPluginRegistry(root);
+        registry.Save(new DevPluginManifest("SampleCommand", "Sample command", "SampleCommand.Commands.OpenSampleCommandCommand",
+            installedVersion, "1.0.0.0", root, string.Empty, 1, DateTime.UtcNow,
+            new[] { new DevPluginVersionEntry("2026", Path.Combine(root, "SampleCommand.dll")) }));
+        var package = CreatePackage(feedVersion, DateTime.UtcNow.AddDays(-1), "2026");
+        var status = Assert.Single(new DevPluginStatusService(registry).BuildStatuses(
+            Array.Empty<DevPluginCatalogItem>(), new[] { package }, "2026", CreateTempFolder()));
+        Assert.Equal(expected, status.Kind);
+        Assert.Equal(installedVersion == "2.0.0", status.HasNewerInstalledVersion);
+    }
+
+    [Fact]
+    public void HighestCompatibleVersionWinsEvenWhenOlderPackageWasPublishedLater()
+    {
+        var latest = CreatePackage("1.10.0", DateTime.UtcNow.AddDays(-2), "2026");
+        var republished = CreatePackage("1.9.0", DateTime.UtcNow, "2026");
+        var incompatible = CreatePackage("2.0.0", DateTime.UtcNow, "2027");
+        var status = Assert.Single(new DevPluginStatusService(new DevPluginRegistry(CreateTempFolder())).BuildStatuses(
+            Array.Empty<DevPluginCatalogItem>(), new[] { republished, incompatible, latest }, "2026", CreateTempFolder()));
+        Assert.Same(latest, status.Available);
+    }
+
     [Fact]
     public void DefaultCatalogIsEmpty()
     {

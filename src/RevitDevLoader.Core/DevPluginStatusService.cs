@@ -144,8 +144,8 @@ public sealed class DevPluginStatusService
                 DevPluginStatusKind.InstalledNoPackage,
                 "The plugin is installed. No package is available in the updates folder for comparison.");
         }
-        else if (!string.Equals(installed.ReleaseId, available.ReleaseId, StringComparison.OrdinalIgnoreCase) ||
-                 !string.Equals(installed.AssemblyVersion, available.AssemblyVersion, StringComparison.OrdinalIgnoreCase))
+        else if (CompareVersions(available.ReleaseId, available.AssemblyVersion,
+                     installed.ReleaseId, installed.AssemblyVersion) > 0)
         {
             status = new DevPluginStatus(
                 plugin,
@@ -285,10 +285,32 @@ public sealed class DevPluginStatusService
         }
     }
 
+    internal static int CompareVersions(string release, string assembly, string installedRelease, string installedAssembly)
+    {
+        if (TryParseVersion(release, out var available) && TryParseVersion(installedRelease, out var installed))
+            return available!.CompareTo(installed);
+        if (TryParseVersion(assembly, out available) && TryParseVersion(installedAssembly, out installed))
+            return available!.CompareTo(installed);
+        return 0;
+    }
+
+    private static bool TryParseVersion(string value, out Version? version)
+    {
+        if (!Version.TryParse(value.TrimStart('v', 'V'), out var parsed))
+        {
+            version = null;
+            return false;
+        }
+        version = new Version(parsed.Major, parsed.Minor, Math.Max(0, parsed.Build), Math.Max(0, parsed.Revision));
+        return true;
+    }
+
     private static DevPayloadPackageInfo SelectBestPackage(IEnumerable<DevPayloadPackageInfo> packages, string revitVersion)
     {
         var orderedPackages = packages
             .OrderByDescending(item => item.SupportsVersion(revitVersion))
+            .ThenByDescending(item => item, Comparer<DevPayloadPackageInfo>.Create((left, right) =>
+                CompareVersions(left.ReleaseId, left.AssemblyVersion, right.ReleaseId, right.AssemblyVersion)))
             .ThenByDescending(item => item.CreatedUtc)
             .ToList();
 

@@ -32,6 +32,10 @@ public sealed class DevPluginStatus
 
     public string Details { get; }
 
+    public bool HasNewerInstalledVersion => Installed is not null && Available is not null &&
+        DevPluginStatusService.CompareVersions(Installed.ReleaseId, Installed.AssemblyVersion,
+            Available.ReleaseId, Available.AssemblyVersion) > 0;
+
     public bool CanRun => Installed is { PluginType: DevPluginType.Command, CommandSlot: not null } &&
         Installed.GetAssemblyPath(RevitVersion) is { Length: > 0 };
 
