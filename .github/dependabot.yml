@@ -8,14 +8,22 @@ updates:
       - /src/RevitDevLoader.Core
       - /tests/RevitDevLoader.Core.Tests
     schedule:
-      interval: weekly
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      all:
+        patterns: ["*"]
     labels: [dependencies, build]
     commit-message:
       prefix: chore(deps)
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      all:
+        patterns: ["*"]
     labels: [dependencies, ci]
     commit-message:
       prefix: chore(deps)
