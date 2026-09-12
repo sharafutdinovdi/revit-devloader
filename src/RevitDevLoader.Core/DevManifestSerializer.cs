@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Json;
 using System.Text;
 
 namespace RevitDevLoader.Core;
@@ -59,7 +61,10 @@ public static class DevManifestSerializer
             updatedUtc,
             versions,
             pluginType,
-            applicationClass);
+            applicationClass,
+            GetOptional(values, "iconPath"),
+            DecodeText(GetOptional(values, "descriptionBase64")),
+            ParseCommands(GetOptional(values, "commandsBase64")));
     }
 
     public static string Serialize(DevPluginManifest manifest)
@@ -68,6 +73,11 @@ public static class DevManifestSerializer
             throw new ArgumentNullException(nameof(manifest));
 
         var builder = new StringBuilder();
+        builder.AppendLine($"iconPath={manifest.IconPath}");
+        builder.AppendLine($"descriptionBase64={Convert.ToBase64String(Encoding.UTF8.GetBytes(manifest.Description))}");
+        using var commandStream = new MemoryStream();
+        new DataContractJsonSerializer(typeof(List<DevPackageCommand>)).WriteObject(commandStream, manifest.Commands.ToList());
+        builder.AppendLine($"commandsBase64={Convert.ToBase64String(commandStream.ToArray())}");
         builder.AppendLine($"{PluginNameKey}={manifest.PluginName}");
         builder.AppendLine($"{DisplayNameKey}={manifest.DisplayName}");
         builder.AppendLine($"{PluginTypeKey}={DevPluginTypeParser.Format(manifest.PluginType)}");
@@ -86,6 +96,16 @@ public static class DevManifestSerializer
             builder.AppendLine($"{VersionPrefix}{version.RevitVersion}{AssemblyPathSuffix}={version.AssemblyPath}");
 
         return builder.ToString();
+    }
+
+    private static string DecodeText(string value) => string.IsNullOrEmpty(value) ? "" : Encoding.UTF8.GetString(Convert.FromBase64String(value));
+
+    private static List<DevPackageCommand>? ParseCommands(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return null;
+        using var stream = new MemoryStream(Convert.FromBase64String(value));
+        return (List<DevPackageCommand>?)new DataContractJsonSerializer(typeof(List<DevPackageCommand>)).ReadObject(stream);
     }
 
     private static Dictionary<string, string> ParseKeyValuePairs(string text)

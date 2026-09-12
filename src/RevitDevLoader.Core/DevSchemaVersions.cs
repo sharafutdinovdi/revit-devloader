@@ -2,7 +2,7 @@ namespace RevitDevLoader.Core;
 
 public static class DevFeedSchema
 {
-    public const int SupportedVersion = 1;
+    public const int SupportedVersion = 3;
 }
 
 public static class DevPayloadSchema

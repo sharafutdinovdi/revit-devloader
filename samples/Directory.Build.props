@@ -1,0 +1,11 @@
+<Project>
+  <Import Project="../Directory.Build.props" />
+  <PropertyGroup>
+    <Configurations>Debug.R25;Debug.R26;Release.R25;Release.R26</Configurations>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <DeployAddin>false</DeployAddin>
+    <LaunchRevit>false</LaunchRevit>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Authors>Dinar Sharafutdinov</Authors>
+  </PropertyGroup>
+</Project>
