@@ -48,7 +48,7 @@ public sealed class PluginManagerRowStateTests
     }
 
     [Theory]
-    [InlineData(DevPluginStatusKind.UpdateAvailable, true, true, "Version 1.0.0")]
+    [InlineData(DevPluginStatusKind.UpdateAvailable, true, true, "1.0.0 → 1.0.1")]
     [InlineData(DevPluginStatusKind.Latest, true, true, "Version 1.0.0")]
     [InlineData(DevPluginStatusKind.NotInstalled, false, true, "Version 1.0.1")]
     public void FormatsVersionLine(
@@ -60,6 +60,25 @@ public sealed class PluginManagerRowStateTests
         var state = PluginManagerRowState.Create(CreateStatus(kind, installed, available));
 
         Assert.Equal(expectedText, state.VersionText);
+    }
+
+    [Theory]
+    [InlineData(" Revit Lookup ", "R")]
+    [InlineData("list warnings", "L")]
+    [InlineData("", "?")]
+    [InlineData("  ", "?")]
+    public void IconFallbackUsesFirstDisplayNameLetter(string name, string expected)
+    {
+        Assert.Equal(expected, DevPluginIconFallback.GetLetter(name));
+    }
+
+    [Fact]
+    public void IconFallbackHasStableCaseInsensitivePalette()
+    {
+        Assert.Equal("#005FB8", DevPluginIconFallback.GetColor("revit-lookup"));
+        Assert.Equal(DevPluginIconFallback.GetColor("revit-lookup"), DevPluginIconFallback.GetColor(" REVIT-LOOKUP "));
+        var colors = Enumerable.Range(0, 100).Select(index => DevPluginIconFallback.GetColor("plugin-" + index)).Distinct();
+        Assert.Equal(8, colors.Count());
     }
 
     [Fact]

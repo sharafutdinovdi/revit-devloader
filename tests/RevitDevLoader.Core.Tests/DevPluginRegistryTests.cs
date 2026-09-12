@@ -101,12 +101,17 @@ public sealed class DevPluginRegistryTests
             "1.0.release-a",
             runRoot,
             @"C:\updates\SampleCommand.zip",
+            1,
             new DateTime(2026, 6, 23, 10, 0, 0, DateTimeKind.Utc),
             new[] { new DevPluginVersionEntry("2026", assemblyPath) });
         registry.Save(manifest);
 
         Assert.True(registry.Exists("SampleCommand"));
-        Assert.True(registry.Delete("SampleCommand"));
+        Assert.True(registry.TryLoadByCommandSlot(1, out _, out _));
+        Assert.True(registry.Delete("SampleCommand", root, out var warnings));
+        Assert.Empty(warnings);
+        Assert.DoesNotContain("SampleCommand", registry.GetRegisteredPluginNames());
+        Assert.False(registry.TryLoadByCommandSlot(1, out _, out _));
 
         Assert.False(registry.Exists("SampleCommand"));
         Assert.True(File.Exists(assemblyPath));

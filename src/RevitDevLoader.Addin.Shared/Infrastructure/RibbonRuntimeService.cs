@@ -100,6 +100,15 @@ public static class RibbonRuntimeService
     {
         var item = panel.GetItems().FirstOrDefault(candidate => candidate.Name == buttonData.Name)
             ?? panel.AddItem(buttonData);
+        if (item is PushButton button)
+        {
+            button.ClassName = buttonData.ClassName;
+            button.AssemblyName = buttonData.AssemblyName;
+            button.ItemText = buttonData.Text;
+            button.ToolTip = buttonData.ToolTip;
+            button.Image = buttonData.Image;
+            button.LargeImage = buttonData.LargeImage;
+        }
         item.Visible = true;
         item.Enabled = true;
         return item;

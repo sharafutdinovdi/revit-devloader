@@ -47,7 +47,7 @@ public sealed partial class PluginManagerWindow
         button.Padding = new Thickness(0);
         button.Background = Brushes.Transparent;
         button.BorderBrush = Brushes.Transparent;
-        button.BorderThickness = new Thickness(0);
+        button.BorderThickness = new Thickness(1);
         button.Content = icon;
         button.ToolTip = toolTip;
         return button;
@@ -179,12 +179,9 @@ public sealed partial class PluginManagerWindow
                 break;
         }
 
-        if (palette != ButtonPalette.HeaderIcon)
-        {
-            var focused = new Trigger { Property = UIElement.IsKeyboardFocusedProperty, Value = true };
-            focused.Setters.Add(CreateResourceSetter(Border.BorderBrushProperty, "DSBorderFocus", "Root"));
-            template.Triggers.Add(focused);
-        }
+        var focused = new Trigger { Property = UIElement.IsKeyboardFocusedProperty, Value = true };
+        focused.Setters.Add(CreateResourceSetter(Border.BorderBrushProperty, "DSBorderFocus", "Root"));
+        template.Triggers.Add(focused);
 
         var disabled = new Trigger { Property = UIElement.IsEnabledProperty, Value = false };
         disabled.Setters.Add(new Setter(UIElement.OpacityProperty, 0.45));

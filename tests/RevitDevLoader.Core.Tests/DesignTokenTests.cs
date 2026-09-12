@@ -256,7 +256,7 @@ public sealed class DesignTokenTests
         Assert.Contains("RibbonIconFactory.CreateJournalIcon()", controls, StringComparison.Ordinal);
         Assert.Contains("button.Background = Brushes.Transparent;", controls, StringComparison.Ordinal);
         Assert.Contains("button.BorderBrush = Brushes.Transparent;", controls, StringComparison.Ordinal);
-        Assert.Contains("button.BorderThickness = new Thickness(0);", controls, StringComparison.Ordinal);
+        Assert.Contains("button.BorderThickness = new Thickness(1);", controls, StringComparison.Ordinal);
         Assert.Contains("new CornerRadius(7)", controls, StringComparison.Ordinal);
         Assert.Contains("UIElement.IsMouseOverProperty, true, \"DSBackgroundHeader\", \"DSBackgroundHeader\"", controls, StringComparison.Ordinal);
         Assert.Contains("ButtonBase.IsPressedProperty, true, \"DSBorder\", \"DSBorder\"", controls, StringComparison.Ordinal);
@@ -284,7 +284,7 @@ public sealed class DesignTokenTests
     }
 
     [Fact]
-    public void PluginRowsUseRibbonCatalogIconsAndMousePointMenus()
+    public void PluginRowsUseFeedIconsAndMousePointMenus()
     {
         var pluginRoot = FindPluginRoot();
         var source = File.ReadAllText(Path.Combine(
@@ -293,7 +293,7 @@ public sealed class DesignTokenTests
             "Views",
             "PluginManagerWindow.Cards.cs"));
 
-        Assert.Contains("RibbonIconFactory.CreateCatalogIcon(pluginId)", source, StringComparison.Ordinal);
+        Assert.Contains("DevPluginIconFallback.GetColor(status.Plugin.PluginId)", source, StringComparison.Ordinal);
         Assert.Contains("rowState.StatusIcon == PluginManagerStatusIcon.None", source, StringComparison.Ordinal);
         Assert.Contains("return null;", source, StringComparison.Ordinal);
         Assert.DoesNotContain("Plugin.IconText", source, StringComparison.Ordinal);

@@ -9,6 +9,35 @@ public sealed class DevUpdatePackageCache
 {
     private static readonly HttpClient HttpClient = new();
 
+    public string PrepareIcon(string source, string cacheRoot)
+    {
+        var localPath = GetLocalPackagePath(source);
+        if (!string.IsNullOrEmpty(localPath))
+            return localPath;
+
+        using var sha = SHA256.Create();
+        var key = BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(source))).Replace("-", string.Empty);
+        var directory = Path.Combine(cacheRoot, "icons", key);
+        var destination = Path.Combine(directory, "icon.png");
+        if (File.Exists(destination))
+            return destination;
+        Directory.CreateDirectory(directory);
+        if (GitHubReleaseAssetReference.TryParse(source, out var reference))
+        {
+            var downloaded = GitHubReleaseAssetSource.Download(reference, directory);
+            if (!string.Equals(downloaded, destination, StringComparison.OrdinalIgnoreCase))
+                File.Move(downloaded, destination);
+        }
+        else
+        {
+            using var stream = HttpClient.GetStreamAsync(source).GetAwaiter().GetResult();
+            using var buffer = new MemoryStream();
+            stream.CopyTo(buffer);
+            File.WriteAllBytes(destination, buffer.ToArray());
+        }
+        return destination;
+    }
+
     public string PreparePackage(DevPayloadPackageInfo package, string cacheRoot)
     {
         if (package is null)

@@ -6,6 +6,29 @@ namespace RevitDevLoader.Core.Tests;
 
 public sealed class DevUpdateFeedTests
 {
+    [Theory]
+    [InlineData("github-release://owner/repo/demo-feed/feed.json", "github-release://owner/repo/demo-feed/sample.png")]
+    [InlineData("https://example.test/releases/feed.json", "https://example.test/releases/sample.png")]
+    public void FeedResolvesOptionalIconInSameRelease(string source, string expected)
+    {
+        var json = FeedJson("ExampleCommand", "1.0.0", "package.zip", new string('A', 64), 123)
+            .Replace("\"displayName\":", "\"icon\": \"sample.png\", \"displayName\":");
+        var package = Assert.Single(new DevUpdateFeedReader().ReadJson(json).ToPackageInfos(source));
+        Assert.Equal(expected, package.IconPath);
+    }
+
+    [Theory]
+    [InlineData("../icon.png")]
+    [InlineData("https://example.test/icon.png")]
+    [InlineData("icon.svg")]
+    public void FeedRejectsIconsOutsideRelease(string icon)
+    {
+        var json = FeedJson("ExampleCommand", "1.0.0", "package.zip", new string('A', 64), 123)
+            .Replace("\"displayName\":", "\"icon\": \"" + icon + "\", \"displayName\":");
+        Assert.Throws<DevManifestException>(() => new DevUpdateFeedReader().ReadJson(json)
+            .ToPackageInfos("github-release://owner/repo/demo-feed/feed.json"));
+    }
+
     [Fact]
     public void FeedReaderParsesRelativePackageUrls()
     {
@@ -26,6 +49,7 @@ public sealed class DevUpdateFeedTests
         Assert.Equal(packagePath, package.PackagePath);
         Assert.Equal(hash, package.Sha256);
         Assert.Equal("feed", package.Source);
+        Assert.Empty(package.IconPath);
         Assert.Equal(DevPluginType.Command, package.PluginType);
     }
 
@@ -71,6 +95,7 @@ public sealed class DevUpdateFeedTests
         var package = Assert.Single(packages);
         Assert.Equal("github-release://owner/repo/test-feed/ExampleCommand-DevPayload-release-a.zip", package.PackagePath);
         Assert.Equal("feed", package.Source);
+        Assert.Empty(package.IconPath);
     }
 
     [Fact]

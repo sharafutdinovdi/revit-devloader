@@ -21,7 +21,8 @@ public sealed class DevPayloadPackageInfo
         string sha256 = "",
         long sizeBytes = 0,
         DevPluginType pluginType = DevPluginType.Command,
-        string applicationClass = "")
+        string applicationClass = "",
+        string iconPath = "")
     {
         if (string.IsNullOrWhiteSpace(packagePath))
             throw new ArgumentException("Package path is required.", nameof(packagePath));
@@ -50,6 +51,7 @@ public sealed class DevPayloadPackageInfo
         if (versionList.Count == 0)
             throw new ArgumentException("At least one Revit version is required.", nameof(versions));
 
+        IconPath = iconPath;
         PackagePath = packagePath;
         PluginId = pluginId.Trim();
         DisplayName = displayName.Trim();
@@ -66,6 +68,8 @@ public sealed class DevPayloadPackageInfo
         Sha256 = string.IsNullOrWhiteSpace(sha256) ? string.Empty : sha256.Trim();
         SizeBytes = sizeBytes < 0 ? 0 : sizeBytes;
     }
+
+    public string IconPath { get; }
 
     public string PackagePath { get; }
 

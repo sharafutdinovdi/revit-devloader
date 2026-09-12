@@ -2,7 +2,9 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media.Imaging;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -24,7 +26,7 @@ public sealed partial class PluginManagerWindow
         summary.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(32) });
         summary.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-        summary.Children.Add(CreatePluginIcon(status.Plugin.PluginId));
+        summary.Children.Add(CreatePluginIcon(status));
 
         var identity = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
 
@@ -41,6 +43,18 @@ public sealed partial class PluginManagerWindow
 
         var metadata = CreateStatusLine(status, rowState);
         identity.Children.Add(metadata);
+        var operation = new TextBlock
+        {
+            Text = _operationStatuses.TryGetValue(status.Plugin.PluginId, out var message)
+                ? message : rowState.ReasonText,
+            FontSize = 11,
+            MinHeight = 16,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        };
+        operation.ToolTip = operation.Text;
+        operation.SetResourceReference(ForegroundProperty,
+            message is null ? "DSTextSecondary" : "DSStatusSuccess");
+        identity.Children.Add(operation);
         Grid.SetColumn(identity, 1);
         summary.Children.Add(identity);
 
@@ -51,12 +65,29 @@ public sealed partial class PluginManagerWindow
             summary.Children.Add(statusIcon);
         }
 
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         var action = CreatePrimaryAction(status, rowState);
         if (action is not null)
+            actions.Children.Add(action);
+        if (status.Installed is not null && !HasConventionalInstallation(status))
         {
-            Grid.SetColumn(action, 3);
-            summary.Children.Add(action);
+            var uninstall = CreateSecondaryButton("Uninstall", () => Remove(status), 76);
+            uninstall.Height = 32;
+            actions.Children.Add(uninstall);
+            var folderGlyph = new System.Windows.Shapes.Path
+            {
+                Data = Geometry.Parse("M1,4 L7,4 L9,6 L17,6 L17,16 L1,16 Z"),
+                StrokeThickness = 1.5,
+                Width = 18,
+                Height = 18
+            };
+            folderGlyph.SetResourceReference(Shape.StrokeProperty, "DSTextSecondary");
+            var folder = CreateHeaderIconButton(folderGlyph, "Open folder", () => OpenPluginFolder(status.Installed.RunRoot));
+            System.Windows.Automation.AutomationProperties.SetName(folder, "Open folder");
+            actions.Children.Add(folder);
         }
+        Grid.SetColumn(actions, 3);
+        summary.Children.Add(actions);
 
         var border = new Border
         {
@@ -94,16 +125,68 @@ public sealed partial class PluginManagerWindow
         return false;
     }
 
-    private static UIElement CreatePluginIcon(string pluginId)
+    private UIElement CreatePluginIcon(DevPluginStatus status)
     {
-        return new Image
+        var icon = new Border
         {
-            Width = 32,
-            Height = 32,
-            Source = RibbonIconFactory.CreateCatalogIcon(pluginId),
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center
+            Width = 40,
+            Height = 40,
+            CornerRadius = new CornerRadius(8),
+            Clip = new RectangleGeometry(new Rect(0, 0, 40, 40), 8, 8),
+            Background = (Brush)new BrushConverter().ConvertFromString(DevPluginIconFallback.GetColor(status.Plugin.PluginId))!,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Center,
+            Child = new TextBlock
+            {
+                Text = DevPluginIconFallback.GetLetter(status.Plugin.DisplayName),
+                FontSize = 22,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = Brushes.White,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            }
         };
+        var source = status.Available?.IconPath ?? string.Empty;
+        var installedIcon = status.Installed is null ? string.Empty : System.IO.Path.Combine(status.Installed.RunRoot, "icon.png");
+        if (string.IsNullOrEmpty(source))
+            source = installedIcon;
+        if (!string.IsNullOrEmpty(source))
+            icon.Loaded += async (_, _) =>
+            {
+                var image = await LoadIconAsync(source);
+                if (image is null && File.Exists(installedIcon))
+                    image = await LoadIconAsync(installedIcon);
+                if (image is not null && !_isClosed)
+                    icon.Child = new Image { Source = image, Stretch = Stretch.UniformToFill };
+            };
+        return icon;
+    }
+
+    private Task<ImageSource?> LoadIconAsync(string source)
+    {
+        if (_iconTasks.TryGetValue(source, out var task))
+            return task;
+        task = Task.Run<ImageSource?>(() =>
+        {
+            try
+            {
+                var path = _packageCache.PrepareIcon(source, DevUpdateLocations.GetDefaultCacheFolder());
+                using var stream = File.OpenRead(path);
+                var decoder = new PngBitmapDecoder(stream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+                var bitmap = decoder.Frames[0];
+                if (bitmap.PixelWidth < 64 || bitmap.PixelWidth != bitmap.PixelHeight)
+                    throw new InvalidDataException("Catalog icons must be square PNGs of at least 64 pixels.");
+                bitmap.Freeze();
+                return bitmap;
+            }
+            catch (Exception exception)
+            {
+                _logger.Warn($"Catalog icon unavailable. Source='{source}'. Error='{exception.Message}'.");
+                return null;
+            }
+        });
+        _iconTasks[source] = task;
+        return task;
     }
 
     private static UIElement? CreateStatusIcon(PluginManagerRowState rowState)
@@ -176,7 +259,7 @@ public sealed partial class PluginManagerWindow
     {
         var panel = new StackPanel
         {
-            Orientation = Orientation.Horizontal,
+            Orientation = Orientation.Vertical,
             Margin = new Thickness(0, 4, 12, 0),
             SnapsToDevicePixels = true
         };
@@ -184,7 +267,8 @@ public sealed partial class PluginManagerWindow
 
         var version = new TextBlock
         {
-            Text = rowState.VersionText,
+            Text = $"{rowState.VersionText} · {rowState.StatusText}",
+            TextTrimming = TextTrimming.CharacterEllipsis,
             FontSize = 12,
             VerticalAlignment = VerticalAlignment.Center,
             ToolTip = $"{BuildInstalledText(status)}\n{BuildAvailableText(status)}"
@@ -243,7 +327,7 @@ public sealed partial class PluginManagerWindow
         {
             PluginManagerRowMenuAction.OpenFolder => "Open plugin folder",
             PluginManagerRowMenuAction.ShowVersions => "Show versions",
-            PluginManagerRowMenuAction.Remove => "Remove",
+            PluginManagerRowMenuAction.Remove => "Uninstall",
             _ => throw new ArgumentOutOfRangeException(nameof(action), action, null)
         };
     }

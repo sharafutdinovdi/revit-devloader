@@ -62,8 +62,20 @@ public sealed class DevUpdateFeed
                 sha256: version.Sha256 ?? string.Empty,
                 sizeBytes: version.Size,
                 pluginType: pluginType,
-                applicationClass: version.ApplicationClass ?? string.Empty);
+                applicationClass: version.ApplicationClass ?? string.Empty,
+                iconPath: ResolveIconPath(source, plugin.Icon));
         }
+    }
+
+    private static string ResolveIconPath(string source, string? icon)
+    {
+        if (string.IsNullOrWhiteSpace(icon))
+            return string.Empty;
+        if (icon.IndexOfAny(new[] { '/', '\\', ':', '?', '#', '%' }) >= 0 ||
+            !icon.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            throw new DevManifestException("Feed icon must be a PNG asset name in the same release.");
+
+        return ResolvePackagePath(source, icon);
     }
 
     private static DateTime ParseDate(string? value)
@@ -102,6 +114,9 @@ public sealed class DevUpdateFeedPlugin
 
     [DataMember(Name = "displayName")]
     public string? DisplayName { get; set; }
+
+    [DataMember(Name = "icon", EmitDefaultValue = false)]
+    public string? Icon { get; set; }
 
     [DataMember(Name = "versions")]
     public List<DevUpdateFeedVersion>? Versions { get; set; }

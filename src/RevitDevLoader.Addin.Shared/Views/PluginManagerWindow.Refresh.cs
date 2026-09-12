@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using RevitDevLoader.Core;
 
 namespace RevitDevLoader.Views;
@@ -49,6 +50,9 @@ public sealed partial class PluginManagerWindow
                 return;
 
             ApplySnapshot(sourceResult.Packages);
+            if (sourceResult.IsEmergencyLocalSource || sourceResult.UsedCachedFeed)
+                MessageBox.Show(this, "Could not refresh the feed. Showing saved or local packages. Check Settings or open the logs.",
+                    "DevLoader", MessageBoxButton.OK, MessageBoxImage.Warning);
             _logger.Info($"Manager update check completed. RevitVersion='{_revitVersion}'. Packages='{sourceResult.Packages.Count}'. UsedCache='{sourceResult.UsedCachedFeed}'. FeedStatus='{sourceResult.FeedStatus}'.");
         }
         catch (Exception exception)

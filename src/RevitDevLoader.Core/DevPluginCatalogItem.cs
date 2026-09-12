@@ -111,3 +111,26 @@ public sealed class DevPluginCatalogItem
         return string.Join("\n", lines);
     }
 }
+
+public static class DevPluginIconFallback
+{
+    private static readonly string[] Palette =
+    {
+        "#005FB8", "#6B4FA0", "#247A68", "#B05B32",
+        "#AD466C", "#377C94", "#657B35", "#8C6548"
+    };
+
+    public static string GetLetter(string displayName)
+    {
+        var name = displayName.Trim();
+        return name.Length == 0 ? "?" : System.Globalization.StringInfo.GetNextTextElement(name).ToUpperInvariant();
+    }
+
+    public static string GetColor(string pluginId)
+    {
+        uint hash = 2166136261;
+        foreach (var character in pluginId.Trim().ToUpperInvariant())
+            hash = unchecked((hash ^ character) * 16777619);
+        return Palette[hash % (uint)Palette.Length];
+    }
+}
