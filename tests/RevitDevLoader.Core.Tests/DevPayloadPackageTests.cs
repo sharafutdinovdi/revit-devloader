@@ -98,8 +98,12 @@ public sealed class DevPayloadPackageTests
     {
         var package = new DevPackageManifest
         {
-            SchemaVersion = 2, Id = "hello-plugin", DisplayName = "Hello Plugin", Version = version,
-            Revit = new List<string> { "2025", "2026" }, Icon = icon,
+            SchemaVersion = 2,
+            Id = "hello-plugin",
+            DisplayName = "Hello Plugin",
+            Version = version,
+            Revit = new List<string> { "2025", "2026" },
+            Icon = icon,
             Entry = new DevPackageEntry { Assembly = assembly, ApplicationClass = commandIds.Length == 0 ? "HelloPlugin.App" : "" },
             Commands = commandIds.Select(id => new DevPackageCommand { Id = id, Class = "HelloPlugin." + id, Text = "Hello\nPlugin", Icon = icon }).ToList()
         };

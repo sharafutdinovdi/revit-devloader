@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
@@ -168,7 +168,12 @@ public sealed class DevPackageCommand
 
     public DevPackageCommand WithSlot(int? slot) => new()
     {
-        Id = Id, Class = Class, Text = Text, Tooltip = Tooltip, Icon = Icon, Slot = slot
+        Id = Id,
+        Class = Class,
+        Text = Text,
+        Tooltip = Tooltip,
+        Icon = Icon,
+        Slot = slot
     };
 }
 
