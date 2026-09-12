@@ -64,7 +64,10 @@ public sealed class DevPluginManifest
         DateTime updatedUtc,
         IEnumerable<DevPluginVersionEntry> versions,
         DevPluginType pluginType = DevPluginType.Command,
-        string applicationClass = "")
+        string applicationClass = "",
+        string iconPath = "",
+        string description = "",
+        IEnumerable<DevPackageCommand>? commands = null)
     {
         if (string.IsNullOrWhiteSpace(pluginName))
             throw new ArgumentException("Plugin name is required.", nameof(pluginName));
@@ -85,6 +88,11 @@ public sealed class DevPluginManifest
         if (_versions.Count == 0)
             throw new ArgumentException("At least one version entry is required.", nameof(versions));
 
+        IconPath = string.IsNullOrEmpty(iconPath) ? "icon.png" : iconPath;
+        Description = description ?? string.Empty;
+        Commands = commands?.ToList() ?? (pluginType == DevPluginType.Command
+            ? new List<DevPackageCommand> { new() { Id = "default", Class = commandType, Text = displayName, Tooltip = displayName, Slot = commandSlot } }
+            : new List<DevPackageCommand>());
         PluginName = pluginName.Trim();
         DisplayName = displayName.Trim();
         PluginType = pluginType;
@@ -97,6 +105,12 @@ public sealed class DevPluginManifest
         CommandSlot = commandSlot;
         UpdatedUtc = updatedUtc.Kind == DateTimeKind.Utc ? updatedUtc : updatedUtc.ToUniversalTime();
     }
+
+    public string IconPath { get; }
+
+    public string Description { get; }
+
+    public IReadOnlyList<DevPackageCommand> Commands { get; }
 
     public string PluginName { get; }
 

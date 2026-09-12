@@ -28,7 +28,7 @@ public static class RibbonRuntimeService
             revitVersion);
 
         foreach (var status in statuses.Where(item => item.CanRun && item.Installed is not null))
-            AddOrShowItem(panel, CreatePluginButton(status.Installed!, assemblyPath));
+            RefreshPluginButtons(panel, status.Installed!, assemblyPath);
 
         logger.Info($"Ribbon startup refreshed. RevitVersion='{revitVersion}'. Buttons='{statuses.Count(item => item.CanRun)}'.");
     }
@@ -64,24 +64,35 @@ public static class RibbonRuntimeService
         }
 
         var panel = GetOrCreatePanel(application, PanelName);
-        var item = AddOrShowItem(panel, CreatePluginButton(manifest, Assembly.GetExecutingAssembly().Location));
-        logger.Info($"Ribbon plugin button visible. PluginId='{plugin.PluginId}'. Item='{item.Name}'.");
+        RefreshPluginButtons(panel, manifest, Assembly.GetExecutingAssembly().Location);
+        logger.Info($"Ribbon plugin buttons visible. PluginId='{plugin.PluginId}'. Commands='{manifest.Commands.Count}'.");
     }
 
     public static void HidePluginButton(UIApplication application, string pluginId, FileLogger logger)
     {
-        var buttonName = GetPluginButtonName(pluginId);
         foreach (var panel in application.GetRibbonPanels())
         {
-            var item = panel.GetItems().FirstOrDefault(candidate => candidate.Name == buttonName);
-            if (item is null)
-                continue;
+            foreach (var item in panel.GetItems().Where(item => IsPluginButton(item.Name, pluginId)))
+            {
+                item.Visible = false;
+                item.Enabled = false;
+                logger.Info($"Ribbon plugin button hidden. PluginId='{pluginId}'. Item='{item.Name}'.");
+            }
+        }
+    }
 
+    private static bool IsPluginButton(string name, string pluginId) =>
+        name == GetPluginButtonName(pluginId) || name.StartsWith(GetPluginButtonName(pluginId) + ":", StringComparison.Ordinal);
+
+    private static void RefreshPluginButtons(RibbonPanel panel, DevPluginManifest manifest, string assemblyPath)
+    {
+        foreach (var item in panel.GetItems().Where(item => IsPluginButton(item.Name, manifest.PluginName)))
+        {
             item.Visible = false;
             item.Enabled = false;
-            logger.Info($"Ribbon plugin button hidden. PluginId='{pluginId}'. Item='{item.Name}'.");
-            return;
         }
+        foreach (var command in manifest.Commands.Where(command => command.Slot.HasValue))
+            AddOrShowItem(panel, CreatePluginButton(manifest, command, assemblyPath));
     }
 
     private static RibbonPanel GetOrCreatePanel(UIControlledApplication application, string panelName)
@@ -129,18 +140,19 @@ public static class RibbonRuntimeService
         };
     }
 
-    private static PushButtonData CreatePluginButton(DevPluginManifest manifest, string assemblyPath)
+    private static PushButtonData CreatePluginButton(DevPluginManifest manifest, DevPackageCommand command, string assemblyPath)
     {
+        var iconPath = Path.Combine(manifest.RunRoot, string.IsNullOrEmpty(command.Icon) ? manifest.IconPath : command.Icon);
         return new PushButtonData(
-            GetPluginButtonName(manifest.PluginName),
-            DevPluginCatalogItem.FormatRibbonText(manifest.DisplayName),
+            GetPluginButtonName(manifest.PluginName) + ":" + command.Id,
+            command.Text,
             assemblyPath,
-            GetRunnerCommandType(manifest.CommandSlot!.Value))
+            GetRunnerCommandType(command.Slot!.Value))
         {
-            ToolTip = manifest.DisplayName,
-            LongDescription = "Run the installed test version of the plugin.",
-            Image = RibbonIconFactory.CreateCatalogIcon(manifest.PluginName),
-            LargeImage = RibbonIconFactory.CreateCatalogIcon(manifest.PluginName)
+            ToolTip = string.IsNullOrEmpty(command.Tooltip) ? manifest.DisplayName : command.Tooltip,
+            LongDescription = manifest.Description,
+            Image = RibbonIconFactory.LoadPackageIcon(iconPath, 16) ?? RibbonIconFactory.CreateCatalogIcon(manifest.PluginName),
+            LargeImage = RibbonIconFactory.LoadPackageIcon(iconPath, 32) ?? RibbonIconFactory.CreateCatalogIcon(manifest.PluginName)
         };
     }
 

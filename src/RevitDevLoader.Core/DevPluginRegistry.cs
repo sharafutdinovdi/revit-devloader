@@ -149,27 +149,15 @@ public sealed class DevPluginRegistry
             }
         }
 
-        var occupied = new HashSet<int>();
-        var pending = new List<DevPluginManifest>();
         foreach (var manifest in manifests)
         {
-            if (manifest.CommandSlot.HasValue && occupied.Add(manifest.CommandSlot.Value))
-                continue;
-
-            pending.Add(manifest);
-        }
-
-        foreach (var manifest in pending)
-        {
-            var slot = Enumerable.Range(1, CommandSlotCount).FirstOrDefault(candidate => !occupied.Contains(candidate));
-            if (slot == 0)
+            if (!TryAssignCommandSlots(manifest.PluginName, manifest.Commands, out var commands, out var error))
             {
-                errors.Add(CreateSlotsExhaustedMessage(occupied.Count));
+                errors.Add(error);
                 continue;
             }
-
-            Save(CopyWithCommandSlot(manifest, slot));
-            occupied.Add(slot);
+            if (!manifest.Commands.Select(command => command.Slot).SequenceEqual(commands.Select(command => command.Slot)))
+                Save(CopyWithCommands(manifest, commands));
         }
 
         return errors;
@@ -221,7 +209,7 @@ public sealed class DevPluginRegistry
             try
             {
                 var candidate = Load(pluginName);
-                if (candidate.CommandSlot == commandSlot)
+                if (candidate.Commands.Any(command => command.Slot == commandSlot))
                 {
                     manifest = candidate;
                     return true;
@@ -374,9 +362,9 @@ public sealed class DevPluginRegistry
         {
             try
             {
-                var slot = Load(pluginName).CommandSlot;
-                if (slot.HasValue)
-                    occupied.Add(slot.Value);
+                foreach (var command in Load(pluginName).Commands)
+                    if (command.Slot.HasValue)
+                        occupied.Add(command.Slot.Value);
             }
             catch (DevManifestException)
             {
@@ -386,21 +374,58 @@ public sealed class DevPluginRegistry
         return occupied;
     }
 
-    private static DevPluginManifest CopyWithCommandSlot(DevPluginManifest manifest, int commandSlot)
+    public bool TryAssignCommandSlots(string pluginName, IEnumerable<DevPackageCommand> requested,
+        out IReadOnlyList<DevPackageCommand> commands, out string error)
+    {
+        var occupied = new HashSet<int>();
+        var previous = new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var name in GetRegisteredPluginNames())
+        {
+            DevPluginManifest manifest;
+            try
+            {
+                manifest = Load(name);
+            }
+            catch (DevManifestException)
+            {
+                continue;
+            }
+            foreach (var command in manifest.Commands)
+            {
+                if (string.Equals(name, pluginName, StringComparison.OrdinalIgnoreCase))
+                    previous[command.Id] = command.Slot;
+                else if (command.Slot.HasValue)
+                    occupied.Add(command.Slot.Value);
+            }
+        }
+        var assigned = requested.Select(command => command.WithSlot(null)).ToList();
+        foreach (var command in assigned)
+            if (previous.TryGetValue(command.Id, out var slot) && slot is >= 1 and <= CommandSlotCount && occupied.Add(slot.Value))
+                command.Slot = slot;
+        foreach (var command in assigned.Where(command => !command.Slot.HasValue))
+        {
+            var slot = Enumerable.Range(1, CommandSlotCount).FirstOrDefault(candidate => !occupied.Contains(candidate));
+            if (slot == 0)
+            {
+                commands = Array.Empty<DevPackageCommand>();
+                error = CreateSlotsExhaustedMessage(occupied.Count);
+                return false;
+            }
+            command.Slot = slot;
+            occupied.Add(slot);
+        }
+        commands = assigned;
+        error = string.Empty;
+        return true;
+    }
+
+    private static DevPluginManifest CopyWithCommands(DevPluginManifest manifest, IReadOnlyList<DevPackageCommand> commands)
     {
         return new DevPluginManifest(
-            manifest.PluginName,
-            manifest.DisplayName,
-            manifest.CommandType,
-            manifest.ReleaseId,
-            manifest.AssemblyVersion,
-            manifest.RunRoot,
-            manifest.PackagePath,
-            commandSlot,
-            manifest.UpdatedUtc,
-            manifest.Versions,
-            manifest.PluginType,
-            manifest.ApplicationClass);
+            manifest.PluginName, manifest.DisplayName, manifest.CommandType,
+            manifest.ReleaseId, manifest.AssemblyVersion, manifest.RunRoot, manifest.PackagePath,
+            commands.FirstOrDefault()?.Slot, manifest.UpdatedUtc, manifest.Versions,
+            manifest.PluginType, manifest.ApplicationClass, manifest.IconPath, manifest.Description, commands);
     }
 
     private static string CreateSlotsExhaustedMessage(int occupiedCount)

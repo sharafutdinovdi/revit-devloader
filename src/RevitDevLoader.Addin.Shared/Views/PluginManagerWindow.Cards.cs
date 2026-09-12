@@ -33,6 +33,7 @@ public sealed partial class PluginManagerWindow
         var pluginName = new TextBlock
         {
             Text = status.Plugin.DisplayName,
+            ToolTip = status.Available?.Description ?? status.Installed?.Description,
             FontSize = 14,
             FontWeight = FontWeights.SemiBold,
             VerticalAlignment = VerticalAlignment.Center,
@@ -147,7 +148,9 @@ public sealed partial class PluginManagerWindow
             }
         };
         var source = status.Available?.IconPath ?? string.Empty;
-        var installedIcon = status.Installed is null ? string.Empty : System.IO.Path.Combine(status.Installed.RunRoot, "icon.png");
+        if (status.Available?.PackageManifest is not null)
+            source = string.Empty;
+        var installedIcon = status.Installed is null ? string.Empty : System.IO.Path.Combine(status.Installed.RunRoot, status.Installed.IconPath);
         if (string.IsNullOrEmpty(source))
             source = installedIcon;
         if (!string.IsNullOrEmpty(source))
@@ -174,8 +177,8 @@ public sealed partial class PluginManagerWindow
                 using var stream = File.OpenRead(path);
                 var decoder = new PngBitmapDecoder(stream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
                 var bitmap = decoder.Frames[0];
-                if (bitmap.PixelWidth < 64 || bitmap.PixelWidth != bitmap.PixelHeight)
-                    throw new InvalidDataException("Catalog icons must be square PNGs of at least 64 pixels.");
+                if (bitmap.PixelWidth < 32 || bitmap.PixelWidth != bitmap.PixelHeight)
+                    throw new InvalidDataException("Catalog icons must be square PNGs of at least 32 pixels.");
                 bitmap.Freeze();
                 return bitmap;
             }

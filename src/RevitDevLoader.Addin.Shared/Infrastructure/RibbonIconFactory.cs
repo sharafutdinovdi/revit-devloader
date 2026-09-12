@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.IO;
+using System.Windows.Media.Imaging;
 using System.Windows;
 using System.Windows.Media;
 
@@ -9,6 +11,28 @@ public static class RibbonIconFactory
     private static readonly Brush BrandBrush = CreateBrandBrush();
     private static readonly Brush OnBrandBrush = new SolidColorBrush(DSTokenColors.DSTextOnBrand);
     private static readonly Typeface IconTypeface = new("Segoe UI Semibold");
+
+    public static ImageSource? LoadPackageIcon(string path, int size)
+    {
+        try
+        {
+            var smallPath = Path.Combine(Path.GetDirectoryName(path) ?? "", Path.GetFileNameWithoutExtension(path) + "@16.png");
+            if (size == 16 && File.Exists(smallPath))
+                path = smallPath;
+            if (!File.Exists(path))
+                return null;
+            using var stream = File.OpenRead(path);
+            var bitmap = new PngBitmapDecoder(stream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad).Frames[0];
+            if (bitmap.PixelWidth != bitmap.PixelHeight || bitmap.PixelWidth < size)
+                return null;
+            bitmap.Freeze();
+            return bitmap;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
 
     public static ImageSource CreateDevIcon()
     {

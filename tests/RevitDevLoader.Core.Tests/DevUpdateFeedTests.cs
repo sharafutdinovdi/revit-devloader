@@ -19,14 +19,24 @@ public sealed class DevUpdateFeedTests
 
     [Theory]
     [InlineData("../icon.png")]
-    [InlineData("https://example.test/icon.png")]
+    [InlineData("http://example.test/icon.png")]
     [InlineData("icon.svg")]
-    public void FeedRejectsIconsOutsideRelease(string icon)
+    public void FeedRejectsUnsafeIconPaths(string icon)
     {
         var json = FeedJson("ExampleCommand", "1.0.0", "package.zip", new string('A', 64), 123)
             .Replace("\"displayName\":", "\"icon\": \"" + icon + "\", \"displayName\":");
         Assert.Throws<DevManifestException>(() => new DevUpdateFeedReader().ReadJson(json)
             .ToPackageInfos("github-release://owner/repo/demo-feed/feed.json"));
+    }
+
+    [Fact]
+    public void FeedV3RetainsDescriptionAndAbsoluteIconAssetUrl()
+    {
+        var json = FeedJson("ExampleCommand", "1.0.0", "package.zip", new string('A', 64), 123)
+            .Replace("\"displayName\":", "\"description\": \"Counts elements.\", \"icon\": \"https://github.com/owner/repo/releases/download/demo/icon.png\", \"displayName\":");
+        var package = Assert.Single(new DevUpdateFeedReader().ReadJson(json).ToPackageInfos("https://example.test/feed.json"));
+        Assert.Equal("Counts elements.", package.Description);
+        Assert.Equal("https://github.com/owner/repo/releases/download/demo/icon.png", package.IconPath);
     }
 
     [Fact]

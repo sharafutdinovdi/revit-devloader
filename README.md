@@ -57,11 +57,40 @@ Revit is needed to run the add-in; its API references restore from NuGet during 
    Command payloads receive a ribbon button; close the manager to run it.
    Application payloads load on the next Revit start.
 
-The recorded [demo feed](https://github.com/sharafutdinovdi/revit-devloader/releases/tag/demo-feed) uses repository `sharafutdinovdi/revit-devloader`, tag `demo-feed` and asset `feed.json`.
-It contains RevitDayByDay 1.0.0 and a DevLoader 0.1.0 application payload for Revit 2026.
-Select RevitDayByDay to reproduce the installation shown above, then restart Revit.
-The DevLoader payload demonstrates delivery of an application assembly; installing it alongside the bootstrap can load two copies.
-Bootstrap self-update is not implemented.
+The [demo feed](https://github.com/sharafutdinovdi/revit-devloader/releases/tag/demo-feed) uses repository `sharafutdinovdi/revit-devloader`, tag `demo-feed` and asset `feed.json`.
+It lists Hello Plugin, Element Counter and Level Lister at 1.0.0 for Revit 2025 and 2026.
+Install Hello Plugin, close the manager and click **Hello Plugin** on the ribbon.
+The dialog displays **This is your first plugin** with the standard OK button.
+
+### Create your own plugin from `samples/HelloPlugin`
+
+Run from the repository root on Windows:
+
+```powershell
+Copy-Item .\samples\HelloPlugin .\samples\MyPlugin -Recurse
+Rename-Item .\samples\MyPlugin\HelloPlugin.csproj MyPlugin.csproj
+notepad .\samples\MyPlugin\HelloCommand.cs
+notepad .\samples\MyPlugin\plugin.json
+.\tools\feed\Build-Package.ps1 -Project .\samples\MyPlugin -Version 1.0.0 -OutputDir .\artifacts\my-plugin
+```
+
+In `plugin.json`, set `id` to `my-plugin`, `displayName` to the chosen name and `entry.assembly` to `2026/MyPlugin.dll`.
+Keep `commands[0].class` as `HelloPlugin.HelloCommand` unless the C# namespace or class is renamed.
+Edit the dialog text in `HelloCommand.cs` and the SVG/PNG artwork under `icons/`.
+The project inherits the shared sample build properties and compiles for both Revit years.
+The result is `artifacts/my-plugin/my-plugin-1.0.0.zip` with its manifest, DLLs and icons.
+
+Create a release in a repository you own, then publish its channel:
+
+```powershell
+$feedRepo = 'OWNER/REPO'
+gh release create preview --repo $feedRepo --title 'Plugin preview' --notes 'Plugin packages'
+.\tools\feed\Publish-DevLoaderFeed.ps1 -InputDir .\artifacts\my-plugin -Repo $feedRepo -Tag preview
+```
+
+Set that repository and `preview` tag in DevLoader Settings, then select **Check for updates > Install**.
+For the next release, rebuild with `-Version 1.1.0`, publish again and select **Check for updates > Update**.
+See [plugin package format](docs/plugin-package.md) for multiple commands, application packages and assembly selection.
 
 ## How it works
 
@@ -80,7 +109,7 @@ The cache verifies SHA-256 when the feed supplies a hash and verifies size when 
 Command slots resolve the installed assembly path and invoke the command through reflection.
 See [how it works](docs/how-it-works.md) for loading limits and retention behavior.
 
-## Features
+## Tools
 
 | Feature | Behavior |
 |---|---|
@@ -88,13 +117,17 @@ See [how it works](docs/how-it-works.md) for loading limits and retention behavi
 | GitHub Releases | Uses `gh` authentication for public or private release assets. |
 | Package checks | Compares supplied hashes and sizes before installation. |
 | Run folders | Preserves existing runs when a release is reinstalled. |
-| Command plugins | Assigns a persistent slot and adds a ribbon button. |
+| Manifest ribbon | Adds one button per installed command with package text, tooltip and icons. |
+| `Build-Package.ps1` | Builds a sample for every declared Revit year and creates a v2 ZIP. |
+| `New-DevLoaderPackage.ps1` | Packages existing year folders with a v2 manifest and icons. |
+| `Publish-DevLoaderFeed.ps1` | Publishes package versions, descriptions and icon assets in a v3 channel registry. |
 | Application plugins | Writes an application `.addin` manifest for the next Revit start. |
 | Local fallback | Scans local ZIP packages when the feed is absent or fails. |
 
 ## Feed format
 
-A JSON feed describes releases and points to ZIP packages with `release-info.properties` and `payload/<year>/` folders.
+A v3 JSON registry describes releases and points to ZIP packages with `plugin.json`, per-year assembly folders and icons.
+Existing key-value DevPayload packages remain supported.
 See [feed format and publishing](docs/feed-format.md) for schemas, settings, examples and package commands.
 
 ## Testing
@@ -130,8 +163,8 @@ Ordinary tests verify contracts without opening Revit; they do not establish liv
 | Build matrix | `Debug.R22` through `Release.R26`, split by add-in family |
 | Revit API references | NuGet packages selected by Revit year |
 
-The recording above demonstrates application payload installation in Revit 2026.
-Live command execution and the other configured Revit years still need host validation.
+The sample packages target Revit 2025 and 2026.
+Live command execution still requires validation inside Revit.
 See [known gaps](docs/roadmap.md#known-gaps) for the remaining limitations.
 Replacing an application payload requires restarting Revit.
 Command loading does not unload previously loaded assemblies or reset plugin static state.
