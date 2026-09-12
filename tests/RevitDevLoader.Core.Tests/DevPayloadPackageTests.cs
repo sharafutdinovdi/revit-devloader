@@ -71,6 +71,20 @@ public sealed class DevPayloadPackageTests
     }
 
     [Fact]
+    public void PackageV2RejectsIconArchiveTraversalBeforeRegistration()
+    {
+        var root = CreateTempFolder();
+        var package = CreateV2Package(root, "1.0.0", new[] { "hello" });
+        using (var archive = ZipFile.Open(package, ZipArchiveMode.Update))
+        using (var writer = new StreamWriter(archive.CreateEntry("icons/../../escaped.dll").Open()))
+            writer.Write("outside package");
+
+        Assert.Throws<DevManifestException>(() => new DevPayloadInstaller().Install(package, root, new[] { "2026" }));
+        Assert.Empty(new DevPluginRegistry(root).GetRegisteredPluginNames());
+        Assert.Empty(Directory.GetFiles(root, "escaped.dll", SearchOption.AllDirectories));
+    }
+
+    [Fact]
     public void PackageV2RejectsSlotExhaustionWithoutPartialRegistration()
     {
         var root = CreateTempFolder();

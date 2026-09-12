@@ -77,8 +77,7 @@ public sealed class DevPayloadInstaller
             {
                 if (entry.FullName.EndsWith("/", StringComparison.Ordinal))
                     continue;
-                var destination = Path.Combine(runRoot, entry.FullName.Replace('/', Path.DirectorySeparatorChar));
-                EnsureChildPath(runRoot, destination);
+                var destination = EnsureChildPath(runRoot, Path.Combine(runRoot, entry.FullName.Replace('/', Path.DirectorySeparatorChar)));
                 Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
                 entry.ExtractToFile(destination);
             }
@@ -227,8 +226,7 @@ public sealed class DevPayloadInstaller
             if (string.IsNullOrWhiteSpace(relativeName))
                 continue;
 
-            var destinationPath = Path.Combine(destinationRoot, relativeName);
-            EnsureChildPath(destinationRoot, destinationPath);
+            var destinationPath = EnsureChildPath(destinationRoot, Path.Combine(destinationRoot, relativeName));
             var directory = Path.GetDirectoryName(destinationPath);
             if (!string.IsNullOrWhiteSpace(directory))
                 Directory.CreateDirectory(directory);
@@ -266,11 +264,12 @@ public sealed class DevPayloadInstaller
         return value.Trim();
     }
 
-    private static void EnsureChildPath(string parent, string child)
+    private static string EnsureChildPath(string parent, string child)
     {
         var resolvedParent = Path.GetFullPath(parent).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
         var resolvedChild = Path.GetFullPath(child);
         if (!resolvedChild.StartsWith(resolvedParent, StringComparison.OrdinalIgnoreCase))
             throw new DevManifestException($"Path escapes expected folder: {resolvedChild}");
+        return resolvedChild;
     }
 }
