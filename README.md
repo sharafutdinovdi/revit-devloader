@@ -19,14 +19,7 @@ GitHub Releases can serve private feeds through the locally authenticated GitHub
 
 ## In action
 
-<img alt="DevLoader inside Revit 2026: a catalog of six real add-ins with their own icons; a command payload is installed and its button appears on the ribbon; the command runs; the run folder opens; Check for updates finds a newer version and installs it; Uninstall hides the ribbon button again" src="docs/screenshots/revit-devloader_install.gif" width="100%">
-
-Recorded in Revit 2026 against the demo feed published as a GitHub Release of this repository: RevitLookup, two ricaun-io sample add-ins, Revit Day by Day, Revit Model MCP and a small command payload, all real Revit 2026 builds under MIT. In order: install a command payload and its button appears on the DevLoader ribbon panel at once; run it; open its run folder under `%LOCALAPPDATA%\RevitDevLoader\plugins`; Check for updates finds 1.1.0 for an add-in installed as 1.0.0 and Update installs it; Uninstall removes the registration and hides the button. Application payloads are picked up by Revit on the next start.
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/revit-devloader_catalog_dark.png">
-  <img alt="DevLoader catalog in Revit 2026: six add-ins with their own icons, one with an update available" src="docs/screenshots/revit-devloader_catalog_light.png" width="100%">
-</picture>
+A recording of the catalog, install, update and uninstall flow is being redone and will land here.
 
 ## Quick start
 
