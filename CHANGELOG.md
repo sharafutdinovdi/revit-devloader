@@ -6,10 +6,11 @@ The Release workflow copies the section for the tagged version into the GitHub r
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-13
+
 ### Added
 
 - GitHub Pages documentation with MkDocs Material, local previews, strict PR builds, `llms.txt` and `llms-full.txt`.
-
 - User and admin Inno Setup installers alongside the release ZIP, with SHA256 checksums.
 - Windows CI smoke tests for silent install and uninstall, component selection, preserved settings and the running Revit guard.
 - WinGet manifest generation and optional submission for stable releases when `WINGET_TOKEN` is configured.
@@ -53,7 +54,8 @@ The Release workflow copies the section for the tagged version into the GitHub r
 
 - Generic feed and local package discovery.
 
-[Unreleased]: https://github.com/sharafutdinovdi/revit-devloader/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/sharafutdinovdi/revit-devloader/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/sharafutdinovdi/revit-devloader/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/sharafutdinovdi/revit-devloader/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/sharafutdinovdi/revit-devloader/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/sharafutdinovdi/revit-devloader/releases/tag/v0.1.0
