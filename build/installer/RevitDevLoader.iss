@@ -81,7 +81,7 @@ begin
   Result := True;
   if (CurPageID = wpReady) and RevitRunning then begin
     Log('Installation blocked: close Revit.exe before installing Revit DevLoader.');
-    { A silent exception before installation returns Inno Setup exit code 3. }
+    { Aborting before installation makes Inno Setup exit non-zero (observed: 1 in silent mode). }
     if WizardSilent then
       Abort;
     MsgBox('Close Revit before installing Revit DevLoader, then try again.', mbError, MB_OK);
