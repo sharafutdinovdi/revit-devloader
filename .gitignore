@@ -27,3 +27,7 @@ artifacts/
 *.rfa
 *.log
 docs/screenshots/raw/
+
+# Documentation build
+site/
+__pycache__/

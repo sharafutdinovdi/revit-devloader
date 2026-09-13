@@ -122,3 +122,15 @@ Use sentence-case headings and short sentences.
 Use real screenshots with private data removed.
 Keep build artifacts and credentials outside version control.
 Agent-specific instructions live in [AGENTS.md](AGENTS.md).
+
+## Documentation site
+
+Preview the documentation from the repository root with Python 3.12:
+
+```shell
+python -m venv .venv
+python -m pip --python .venv install -r docs/requirements.txt
+```
+
+Run `.venv/bin/mkdocs serve` on macOS or Linux, or `.venv\Scripts\mkdocs serve` on Windows, and open <http://127.0.0.1:8000/revit-devloader/>.
+Replace `serve` with `build --strict` to run the documentation check used by pull requests.
