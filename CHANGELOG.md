@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- User and admin Inno Setup installers alongside the release ZIP, with SHA256 checksums.
+- Windows CI smoke tests for silent install and uninstall, component selection, preserved settings and the running Revit guard.
+- WinGet manifest generation and optional submission for stable releases when `WINGET_TOKEN` is configured.
+
 ## 0.3.0 - 2026-09-12
 
 - Plugin packages with a `plugin.json` manifest, per-year assemblies and PNG icons; v1 key-value packages still load.

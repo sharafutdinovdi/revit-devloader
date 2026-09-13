@@ -53,16 +53,19 @@ This repository has no Python server or Python tests.
 
 ## Automated checks
 
-PR checks reuse CI to build Legacy net48 hosts for Revit 2022–2024 and Modern net8 hosts for Revit 2025–2026, run the core and release layout tests, and package the installer.
+PR checks reuse CI to build Legacy net48 hosts for Revit 2022–2024 and Modern net8 hosts for Revit 2025–2026, run the core and release layout tests, and package the ZIP and user and admin setup executables.
+Installer smoke tests verify silent installation and removal, manifest paths, component selection, preserved user data and rejection while Revit is running.
 The quality job checks the Conventional Commit PR title, validates workflows with `actionlint`, and runs `dotnet format --verify-no-changes` against the solution.
 CodeQL analyzes C# with the same SDK setup and build script as CI.
 The `main` branch requires a PR, an approving review and passing `CI / test`, `pr-checks` and `CodeQL (csharp)` checks; administrators can bypass these requirements.
 
 After successful PR checks, one build comment links to the Legacy, Modern and Installer artifacts and lists their Revit years.
+The Installer artifact contains the ZIP; the separate Installers artifact on the linked run contains the user and admin setup executables.
 The comment updates after each successful build of the current PR revision.
 Downloads require a GitHub sign-in and expire after 90 days.
 Weekly Dependabot PRs cover NuGet and GitHub Actions dependencies.
-Tagged releases use the existing installer workflow and group generated notes by PR labels.
+Tagged releases publish the ZIP, user and admin setup executables, and `SHA256SUMS.txt`.
+Release notes group changes by PR labels.
 
 ## Documentation
 

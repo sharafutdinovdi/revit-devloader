@@ -17,17 +17,29 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-dotnet@v6.0.0
         with:
           global-json-file: global.json
+      - name: Set release version
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^v(?<version>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)$') {
+            throw 'Release tag must use vMAJOR.MINOR.PATCH with optional prerelease or build metadata.'
+          }
+          "RELEASE_VERSION=$($Matches.version)" >> $env:GITHUB_ENV
       - name: Build all Revit years
         run: .\build\build-all.ps1 -SkipTests
       - name: Test core and release layout
         run: dotnet test tests/RevitDevLoader.Core.Tests -c Release
       - name: Package installer
         run: .\build\installer\package.ps1 -SkipBuild
+      - name: Build installers
+        run: .\build\installer\build-installers.ps1 -InstallIfMissing
       - name: Publish GitHub Release
         shell: pwsh
         env:
@@ -36,15 +48,29 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           $ErrorActionPreference = 'Stop'
-          if ($env:RELEASE_TAG -notmatch '^v(?<version>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)$') {
-            throw 'Release tag must use vMAJOR.MINOR.PATCH with optional prerelease or build metadata.'
-          }
-          $version = $Matches.version
+          $version = $env:RELEASE_VERSION
           $packages = @(Get-ChildItem -LiteralPath build/release/packages -Filter '*.zip' -File)
-          if ($packages.Count -ne 1) { throw 'Expected exactly one installer ZIP.' }
+          $setups = @(Get-ChildItem -LiteralPath build/release/packages -Filter '*-setup.exe' -File)
+          if ($packages.Count -ne 1 -or $setups.Count -ne 2) { throw 'Expected exactly one ZIP and two setup executables.' }
           $assetPath = Join-Path $packages[0].DirectoryName "revit-devloader-$version.zip"
           Move-Item -LiteralPath $packages[0].FullName -Destination $assetPath
-          $releaseArgs = @('release', 'create', $env:RELEASE_TAG, $assetPath, '--verify-tag', '--generate-notes', '--title', "Revit DevLoader $version")
+          $assets = @($assetPath) + @($setups.FullName)
+          $checksumPath = Join-Path $packages[0].DirectoryName 'SHA256SUMS.txt'
+          $checksums = foreach ($asset in $assets | Sort-Object) {
+            $hash = (Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $([IO.Path]::GetFileName($asset))"
+          }
+          Set-Content -LiteralPath $checksumPath -Value $checksums -Encoding ascii
+          $releaseArgs = @('release', 'create', $env:RELEASE_TAG) + $assets + @($checksumPath, '--verify-tag', '--generate-notes', '--title', "Revit DevLoader $version")
           if ($version -match '-') { $releaseArgs += '--prerelease' }
           & gh @releaseArgs
           if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publishing failed.' }
+      # Releases created with GITHUB_TOKEN do not trigger release workflows.
+      - name: Dispatch WinGet manifests
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh workflow run winget.yml --ref $env:RELEASE_TAG -f "tag=$env:RELEASE_TAG"
+          if ($LASTEXITCODE -ne 0) { throw 'WinGet workflow dispatch failed.' }

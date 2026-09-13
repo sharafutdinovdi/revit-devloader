@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+PackageIdentifier: Sharafutdinov.RevitDevLoader
+PackageVersion: '{{VERSION}}'
+InstallerType: inno
+UpgradeBehavior: install
+ReleaseDate: {{RELEASE_DATE}}
+Installers:
+  - Architecture: x64
+    Scope: user
+    InstallerUrl: '{{USER_URL}}'
+    InstallerSha256: '{{USER_SHA256}}'
+    InstallerSwitches:
+      Silent: /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+      SilentWithProgress: /SILENT /SUPPRESSMSGBOXES /NORESTART
+    ProductCode: '{A5FDD6B1-EC4B-4D3F-87EA-9D92652BCEA1}_is1'
+  - Architecture: x64
+    Scope: machine
+    InstallerUrl: '{{ADMIN_URL}}'
+    InstallerSha256: '{{ADMIN_SHA256}}'
+    InstallerSwitches:
+      Silent: /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+      SilentWithProgress: /SILENT /SUPPRESSMSGBOXES /NORESTART
+    ProductCode: '{A5FDD6B1-EC4B-4D3F-87EA-9D92652BCEA2}_is1'
+ManifestType: installer
+ManifestVersion: 1.6.0
