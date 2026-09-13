@@ -21,6 +21,145 @@ jobs:
         run: dotnet test tests/RevitDevLoader.Core.Tests -c Release
       - name: Package installer
         run: .\build\installer\package.ps1 -SkipBuild
+      - name: Build installers
+        env:
+          RELEASE_VERSION: 0.0.0-ci
+        run: .\build\installer\build-installers.ps1 -InstallIfMissing
+      - name: Smoke test user installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = (Resolve-Path 'build/release/packages/revit-devloader-0.0.0-ci-user-setup.exe').Path
+          $addins = Join-Path $env:APPDATA 'Autodesk\Revit\Addins'
+          $manifestPath = Join-Path $addins '2026\RevitDevLoader.addin'
+          $payloadPath = Join-Path $addins '2026\RevitDevLoader'
+          $logPath = Join-Path $env:RUNNER_TEMP 'devloader-user-install.log'
+          $arguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/COMPONENTS="revit2026"', "/LOG=`"$logPath`"")
+          $process = Start-Process -FilePath $setup -ArgumentList $arguments -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installer exit code: $($process.ExitCode)" }
+          Write-Host 'PASS: user installer exited with code 0'
+          if (-not (Test-Path -LiteralPath $manifestPath)) { throw 'Manifest was not installed.' }
+          Write-Host 'PASS: Revit 2026 manifest exists'
+          $dlls = @(Get-ChildItem -LiteralPath $payloadPath -Filter 'RevitDevLoader*.dll')
+          if ($dlls.Count -eq 0) { throw 'DevLoader assemblies were not installed.' }
+          Write-Host 'PASS: Revit 2026 DevLoader assemblies exist'
+          [xml]$manifest = Get-Content -LiteralPath $manifestPath -Raw
+          foreach ($addin in $manifest.RevitAddIns.AddIn) {
+              if (-not (Test-Path -LiteralPath (Join-Path (Split-Path $manifestPath) $addin.Assembly))) { throw 'Manifest assembly path does not resolve.' }
+          }
+          Write-Host 'PASS: manifest assembly path resolves'
+          $apiFiles = @(Get-ChildItem -LiteralPath $addins -Recurse -Filter 'RevitAPI*.dll')
+          if ($apiFiles.Count) { throw 'Autodesk API assemblies were installed.' }
+          Write-Host 'PASS: no RevitAPI assemblies installed'
+          if (Test-Path (Join-Path $addins '2025')) { throw 'Unselected Revit 2025 was modified.' }
+          Write-Host 'PASS: unselected Revit 2025 is absent'
+          $settingsRoot = Join-Path $env:LOCALAPPDATA 'RevitDevLoader'
+          $sentinels = @('settings.properties', 'plugins\ci-preserve', 'updates\ci-preserve', 'runs\ci-preserve') |
+              ForEach-Object { Join-Path $settingsRoot $_ }
+          foreach ($path in $sentinels) {
+              New-Item -ItemType Directory -Force -Path (Split-Path $path) | Out-Null
+              Set-Content -LiteralPath $path -Value 'preserve-me'
+          }
+          $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{A5FDD6B1-EC4B-4D3F-87EA-9D92652BCEA1}_is1'
+          $uninstall = (Get-ItemProperty -LiteralPath $key).UninstallString.Trim('"')
+          if (-not (Test-Path -LiteralPath $uninstall)) { throw 'Registered uninstaller is missing.' }
+          Write-Host 'PASS: user uninstaller is registered'
+          $process = Start-Process -FilePath $uninstall -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Uninstaller exit code: $($process.ExitCode)" }
+          Write-Host 'PASS: user uninstaller exited with code 0'
+          if (Test-Path -LiteralPath $manifestPath) { throw 'Manifest remains after uninstall.' }
+          Write-Host 'PASS: Revit 2026 manifest removed'
+          if (Test-Path -LiteralPath $payloadPath) { throw 'Add-in directory remains after uninstall.' }
+          Write-Host 'PASS: Revit 2026 add-in directory removed'
+          foreach ($path in $sentinels) {
+              if ((Get-Content -LiteralPath $path -Raw).Trim() -ne 'preserve-me') { throw "User data was changed: $path" }
+              Remove-Item -LiteralPath $path
+          }
+          Write-Host 'PASS: settings, plugins, updates and run folders preserved'
+      - name: Smoke test admin installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = (Resolve-Path 'build/release/packages/revit-devloader-0.0.0-ci-admin-setup.exe').Path
+          $addins = Join-Path $env:ProgramData 'Autodesk\Revit\Addins'
+          $manifestPath = Join-Path $addins '2026\RevitDevLoader.addin'
+          $payloadPath = Join-Path $addins '2026\RevitDevLoader'
+          $logPath = Join-Path $env:RUNNER_TEMP 'devloader-admin-install.log'
+          $arguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/COMPONENTS="revit2026"', "/LOG=`"$logPath`"")
+          $process = Start-Process -FilePath $setup -ArgumentList $arguments -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installer exit code: $($process.ExitCode)" }
+          Write-Host 'PASS: admin installer exited with code 0'
+          if (-not (Test-Path -LiteralPath $manifestPath)) { throw 'Manifest was not installed.' }
+          Write-Host 'PASS: Revit 2026 manifest exists'
+          $dlls = @(Get-ChildItem -LiteralPath $payloadPath -Filter 'RevitDevLoader*.dll')
+          if ($dlls.Count -eq 0) { throw 'DevLoader assemblies were not installed.' }
+          Write-Host 'PASS: Revit 2026 DevLoader assemblies exist'
+          [xml]$manifest = Get-Content -LiteralPath $manifestPath -Raw
+          foreach ($addin in $manifest.RevitAddIns.AddIn) {
+              if (-not (Test-Path -LiteralPath (Join-Path (Split-Path $manifestPath) $addin.Assembly))) { throw 'Manifest assembly path does not resolve.' }
+          }
+          Write-Host 'PASS: manifest assembly path resolves'
+          $apiFiles = @(Get-ChildItem -LiteralPath $addins -Recurse -Filter 'RevitAPI*.dll')
+          if ($apiFiles.Count) { throw 'Autodesk API assemblies were installed.' }
+          Write-Host 'PASS: no RevitAPI assemblies installed'
+          if (Test-Path (Join-Path $addins '2025')) { throw 'Unselected Revit 2025 was modified.' }
+          Write-Host 'PASS: unselected Revit 2025 is absent'
+          $settingsRoot = Join-Path $env:LOCALAPPDATA 'RevitDevLoader'
+          $sentinels = @('settings.properties', 'plugins\ci-preserve', 'updates\ci-preserve', 'runs\ci-preserve') |
+              ForEach-Object { Join-Path $settingsRoot $_ }
+          foreach ($path in $sentinels) {
+              New-Item -ItemType Directory -Force -Path (Split-Path $path) | Out-Null
+              Set-Content -LiteralPath $path -Value 'preserve-me'
+          }
+          $key = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{A5FDD6B1-EC4B-4D3F-87EA-9D92652BCEA2}_is1'
+          $uninstall = (Get-ItemProperty -LiteralPath $key).UninstallString.Trim('"')
+          if (-not (Test-Path -LiteralPath $uninstall)) { throw 'Registered uninstaller is missing.' }
+          Write-Host 'PASS: admin uninstaller is registered'
+          $process = Start-Process -FilePath $uninstall -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Uninstaller exit code: $($process.ExitCode)" }
+          Write-Host 'PASS: admin uninstaller exited with code 0'
+          if (Test-Path -LiteralPath $manifestPath) { throw 'Manifest remains after uninstall.' }
+          Write-Host 'PASS: Revit 2026 manifest removed'
+          if (Test-Path -LiteralPath $payloadPath) { throw 'Add-in directory remains after uninstall.' }
+          Write-Host 'PASS: Revit 2026 add-in directory removed'
+          foreach ($path in $sentinels) {
+              if ((Get-Content -LiteralPath $path -Raw).Trim() -ne 'preserve-me') { throw "User data was changed: $path" }
+              Remove-Item -LiteralPath $path
+          }
+          Write-Host 'PASS: settings, plugins, updates and run folders preserved'
+      - name: Smoke test running Revit guard
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $fakeRevit = Join-Path $env:RUNNER_TEMP 'Revit.exe'
+          Copy-Item "$env:WINDIR/System32/cmd.exe" $fakeRevit
+          $revit = Start-Process $fakeRevit -ArgumentList '/c ping -n 120 127.0.0.1 > nul' -PassThru
+          try {
+              $setup = (Resolve-Path 'build/release/packages/revit-devloader-0.0.0-ci-user-setup.exe').Path
+              $log = Join-Path $env:RUNNER_TEMP 'devloader-running-install.log'
+              $process = Start-Process $setup -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /COMPONENTS=revit2026 /LOG=`"$log`"" -Wait -PassThru
+              if ($process.ExitCode -eq 0) { throw 'Expected a non-zero exit code while Revit is running, got 0' }
+              if (-not (Select-String -LiteralPath $log -SimpleMatch 'Installation blocked: close Revit.exe')) { throw 'Missing process guard log message.' }
+              if (Test-Path "$env:APPDATA/Autodesk/Revit/Addins/2026/RevitDevLoader.addin") { throw 'Blocked installer wrote a manifest.' }
+              Write-Host "PASS: running Revit blocks silent setup (exit code $($process.ExitCode)) and logs the reason"
+          }
+          finally {
+              Stop-Process -Id $revit.Id -Force -ErrorAction SilentlyContinue
+          }
+      - name: Upload installer smoke logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: Installer-smoke-logs
+          path: ${{ runner.temp }}/devloader-*-install.log
+          if-no-files-found: ignore
+      - name: Upload installers
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: Installers
+          path: build/release/packages/*-setup.exe
+          retention-days: 90
+          if-no-files-found: error
       - name: Upload Legacy add-ins
         uses: actions/upload-artifact@v7.0.1
         with:
