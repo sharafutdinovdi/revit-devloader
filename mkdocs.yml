@@ -1,0 +1,88 @@
+site_name: Revit DevLoader
+site_url: https://sharafutdinovdi.github.io/revit-devloader/
+repo_url: https://github.com/sharafutdinovdi/revit-devloader
+repo_name: sharafutdinovdi/revit-devloader
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+
+extra_css:
+  - stylesheets/extra.css
+hooks:
+  - docs/hooks.py
+exclude_docs: |
+  requirements.txt
+  hooks.py
+  **/__pycache__/**
+validation:
+  links:
+    not_found: warn
+    anchors: warn
+    unrecognized_links: warn
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.snippets:
+      base_path: ["."]
+
+plugins:
+  - search
+  - llmstxt:
+      full_output: llms-full.txt
+      sections:
+        Getting started:
+          - index.md: Installation, first feed and compatibility
+          - contributing.md: Local builds and contribution checks
+        Concepts:
+          - how-it-works.md
+          - roadmap.md
+        Reference:
+          - feed-format.md
+          - plugin-package.md
+          - changelog.md
+          - security.md
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Install: https://sharafutdinovdi.github.io/revit-devloader/#install
+  - How it works: how-it-works.md
+  - Feed format: feed-format.md
+  - Plugin packages: plugin-package.md
+  - Roadmap: roadmap.md
+  - Contributing: contributing.md
+  - Changelog: changelog.md
+  - Security: security.md

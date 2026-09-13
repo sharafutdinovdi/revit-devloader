@@ -38,7 +38,7 @@ Recorded in Revit 2026 against the demo feed. The catalog lists the three packag
 | Registry | `.devmanifest` files that map installed packages to run folders and commands |
 | Ribbon | Buttons resolve the installed assembly and invoke the command through reflection |
 
-Details: [how it works](docs/how-it-works.md), [feed format and publishing](docs/feed-format.md), [plugin package format](docs/plugin-package.md), [roadmap and known gaps](docs/roadmap.md).
+Details: [how it works](https://sharafutdinovdi.github.io/revit-devloader/how-it-works/), [feed format and publishing](https://sharafutdinovdi.github.io/revit-devloader/feed-format/), [plugin package format](https://sharafutdinovdi.github.io/revit-devloader/plugin-package/), [roadmap and known gaps](https://sharafutdinovdi.github.io/revit-devloader/roadmap/).
 
 ## Compatibility
 
@@ -50,6 +50,8 @@ Details: [how it works](docs/how-it-works.md), [feed format and publishing](docs
 Windows only. Revit API references restore from NuGet per year; no Autodesk assemblies ship in any artifact. Command loading does not unload previously loaded assemblies, and replacing an application plugin requires a Revit restart.
 
 ## Contributing and support
+
+[Documentation](https://sharafutdinovdi.github.io/revit-devloader/).
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for the build from source, the sample plugin walkthrough and the release ritual. Bugs and feature requests use the [issue forms](https://github.com/sharafutdinovdi/revit-devloader/issues/new/choose); questions go to [Discussions](https://github.com/sharafutdinovdi/revit-devloader/discussions); vulnerabilities follow [SECURITY.md](SECURITY.md).
 
