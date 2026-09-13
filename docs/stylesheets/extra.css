@@ -1,0 +1,19 @@
+:root {
+  --md-primary-fg-color: #005FB8;
+  --md-primary-fg-color--light: #005FB8;
+  --md-primary-fg-color--dark: #005FB8;
+}
+
+.md-typeset code {
+  font-size: 0.85em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

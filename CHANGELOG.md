@@ -8,6 +8,8 @@ The Release workflow copies the section for the tagged version into the GitHub r
 
 ### Added
 
+- GitHub Pages documentation with MkDocs Material, local previews, strict PR builds, `llms.txt` and `llms-full.txt`.
+
 - User and admin Inno Setup installers alongside the release ZIP, with SHA256 checksums.
 - Windows CI smoke tests for silent install and uninstall, component selection, preserved settings and the running Revit guard.
 - WinGet manifest generation and optional submission for stable releases when `WINGET_TOKEN` is configured.
