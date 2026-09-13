@@ -40,6 +40,41 @@ jobs:
         run: .\build\installer\package.ps1 -SkipBuild
       - name: Build installers
         run: .\build\installer\build-installers.ps1 -InstallIfMissing
+      # Highlights come from CHANGELOG.md; a missing section fails the release on purpose.
+      - name: Compose release notes
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          version="$RELEASE_VERSION"
+          section="$(awk -v v="$version" 'BEGIN { gsub(/\./, "\\.", v); re = "^## \\[?" v "\\]?( |$)" }
+            $0 ~ re { on = 1; next }
+            /^## / && on { exit }
+            on { print }' CHANGELOG.md)"
+          if [ -z "$(printf '%s' "$section" | tr -d '[:space:]')" ]; then
+            echo "CHANGELOG.md has no section for $version. Add '## [$version] - YYYY-MM-DD' before tagging." >&2
+            exit 1
+          fi
+          base="https://github.com/$REPO/releases/download/$RELEASE_TAG"
+          {
+            echo "## Highlights"
+            echo
+            printf '%s\n' "$section"
+            echo
+            echo "## Install"
+            echo
+            echo "- [User setup]($base/revit-devloader-$version-user-setup.exe): current Windows account, no elevation."
+            echo "- [Admin setup]($base/revit-devloader-$version-admin-setup.exe): all users on the machine."
+            echo "- [ZIP with install.ps1]($base/revit-devloader-$version.zip): scripted installs."
+            echo "- [SHA256SUMS.txt]($base/SHA256SUMS.txt) covers every asset above."
+            echo
+            echo "Close Revit before installing, then open **Add-Ins > DevLoader > Dev**."
+            echo
+            echo "---"
+          } > release-notes.md
+          cat release-notes.md
       - name: Publish GitHub Release
         shell: pwsh
         env:
@@ -61,7 +96,7 @@ jobs:
             "$hash  $([IO.Path]::GetFileName($asset))"
           }
           Set-Content -LiteralPath $checksumPath -Value $checksums -Encoding ascii
-          $releaseArgs = @('release', 'create', $env:RELEASE_TAG) + $assets + @($checksumPath, '--verify-tag', '--generate-notes', '--title', "Revit DevLoader $version")
+          $releaseArgs = @('release', 'create', $env:RELEASE_TAG) + $assets + @($checksumPath, '--verify-tag', '--notes-file', 'release-notes.md', '--generate-notes', '--title', "Revit DevLoader $version")
           if ($version -match '-') { $releaseArgs += '--prerelease' }
           & gh @releaseArgs
           if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publishing failed.' }
