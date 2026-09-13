@@ -40,9 +40,9 @@ def on_page_markdown(markdown, page, config, files):
                 path = ROOT_PAGES[path]
             elif path.startswith("docs/"):
                 path = path.removeprefix("docs/")
-            else:
+            elif (root / path).exists():
                 path = f"{config.repo_url}/blob/main/{path}"
-        elif path.startswith("../"):
+        elif path.startswith("../") and (root / "docs" / path).exists():
             path = f"{config.repo_url}/blob/main/{path.removeprefix('../')}"
         suffix = (f"?{url.query}" if url.query else "") + (f"#{url.fragment}" if url.fragment else "")
         return f"]({path}{suffix})"
