@@ -25,7 +25,7 @@ $process.ExitCode
 ```
 
 A comma-separated list selects multiple components, for example `/COMPONENTS="revit2025,revit2026"`.
-When Revit is running, silent setup exits with code 3 and writes the reason to its log.
+When Revit is running, silent setup exits with a non-zero code (1 in Inno Setup 6) and writes the reason to its log.
 Interactive setup waits for Revit to close before continuing.
 On a machine without detected Revit installations, the default selection is empty; select a year explicitly to install its add-in.
 
