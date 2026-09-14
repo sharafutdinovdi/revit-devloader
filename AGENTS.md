@@ -19,11 +19,14 @@ Revit DevLoader installs versioned test plugins for Autodesk Revit 2022-2026 fro
 | `samples/` | Three sample plugins and their shared build properties. |
 | `tools/feed/` | PowerShell tools to build packages and publish feeds. |
 | `docs/` | How it works, feed format, plugin package format, roadmap, screenshots. |
-| `.github/` | Workflows (CI, PR checks, CodeQL, release, WinGet, labeler, stale, welcome), issue forms, PR template. |
+| `.github/` | Workflows (CI, PR checks, CodeQL, release, WinGet, shared community callers), issue forms, PR template. |
 
 `build/release/**` is generated output and is never edited or committed.
 
 ## Commands
+
+Install hooks with `pre-commit install`; run local checks with `pre-commit run --all-files`.
+The solution formatting hook requires Windows; macOS and Linux results rely on PR checks for that hook.
 
 Windows, with the SDK from `global.json`:
 
