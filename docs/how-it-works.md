@@ -1,5 +1,9 @@
 # How it works
 
+## Revit compatibility
+
+The add-in targets the lowest stable Revit API build available for each supported year for compatibility with every patch of that year.
+
 ## Discovery
 
 The built-in catalog is empty.

@@ -18,8 +18,8 @@
     <Configurations>Debug;Release;Debug.R25;Debug.R26;Release.R25;Release.R26</Configurations>
   </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*"/>
-        <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*"/>
+        <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="[$(RevitVersion).0.0,$([MSBuild]::Add($(RevitVersion),1)).0.0)"/>
+        <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="[$(RevitVersion).0.0,$([MSBuild]::Add($(RevitVersion),1)).0.0)"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12"/>
         <PackageReference Include="Serilog" Version="4.4.0"/>
         <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0"/>
