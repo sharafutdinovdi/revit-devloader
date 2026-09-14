@@ -2,32 +2,29 @@ name: PR checks
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, edited, ready_for_review]
-  push:
-    branches: [main]
-  workflow_dispatch:
-  workflow_run:
-    workflows: [PR checks]
-    types: [completed]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
-  pull-requests: read
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   ci:
     name: CI
-    if: github.event_name == 'pull_request'
     uses: ./.github/workflows/ci.yml
 
   quality:
     name: pr-checks
-    if: github.event_name != 'workflow_run'
     runs-on: windows-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v7.0.1
       - name: Check Conventional Commit title
-        if: github.event_name == 'pull_request'
         uses: amannn/action-semantic-pull-request@v6
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -57,67 +54,10 @@ jobs:
           DeployAddin: 'false'
         run: dotnet format RevitDevLoader.sln --verify-no-changes --verbosity minimal
 
-  artifact-comment:
-    if: >-
-      github.event_name == 'workflow_run' &&
-      github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      pull-requests: write
-    concurrency:
-      group: artifact-comment-${{ github.event.workflow_run.head_repository.id }}-${{ github.event.workflow_run.head_branch }}
-      cancel-in-progress: false
-    steps:
-      - name: Update build artifact comment
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const run = context.payload.workflow_run;
-            const repo = context.repo;
-            // Fork runs can omit pull_requests; resolve the association through the API.
-            const pulls = run.pull_requests?.length ? run.pull_requests :
-              await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, {
-                ...repo, commit_sha: run.head_sha, per_page: 100
-              });
-            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
-              ...repo, run_id: run.id, per_page: 100
-            });
-            const builds = [
-              ['Legacy', 'Legacy add-ins: Revit 2022, 2023, 2024 (net48)'],
-              ['Modern', 'Modern add-ins: Revit 2025, 2026 (net8)'],
-              ['Installer', 'Installer ZIP: Revit 2022–2026']
-            ];
-            const links = builds.map(([name, label]) => {
-              const artifact = artifacts.find(item => item.name === name && !item.expired);
-              if (!artifact) throw new Error(`Missing artifact: ${name}`);
-              return `- [${label}](${context.serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${run.id}/artifacts/${artifact.id})`;
-            });
-            const marker = '<!-- addin-build-artifacts -->';
-            const body = [marker, 'Builds and tests passed for Revit 2022–2026.', '',
-              ...links, '', `Commit: \`${run.head_sha}\`. Sign in to GitHub to download; artifacts expire after 90 days.`].join('\n');
-            for (const candidate of pulls) {
-              const { data: pr } = await github.rest.pulls.get({...repo, pull_number: candidate.number});
-              if (pr.state !== 'open' || pr.base.repo.full_name !== `${repo.owner}/${repo.repo}` ||
-                  pr.head.sha !== run.head_sha) continue;
-              const comments = await github.paginate(github.rest.issues.listComments, {
-                ...repo, issue_number: pr.number, per_page: 100
-              });
-              const previous = comments.find(item => item.user.login === 'github-actions[bot]' &&
-                item.body.includes(marker));
-              if (previous) {
-                await github.rest.issues.updateComment({...repo, comment_id: previous.id, body});
-              } else {
-                await github.rest.issues.createComment({...repo, issue_number: pr.number, body});
-              }
-            }
-
   explain-failure:
     needs: [ci, quality]
     if: >-
-      failure() && github.event_name == 'pull_request' &&
+      failure() &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.actor != 'dependabot[bot]'
     permissions:
@@ -126,7 +66,7 @@ jobs:
     uses: sharafutdinovdi/.github/.github/workflows/check-failure-comment.yml@main
     with:
       step-commands: >-
-        {"Check Conventional Commit title":"gh pr edit ${{ github.event.pull_request.number }} --title \"ci: adopt shared workflows and add pre-commit\"",
+        {"Check Conventional Commit title":"use a Conventional Commit PR title, e.g. fix(addin): ...",
          "Check workflows with actionlint":"actionlint",
          "Verify C# formatting":"dotnet format RevitDevLoader.sln --verify-no-changes",
          "Build documentation":"mkdocs build --strict"}
