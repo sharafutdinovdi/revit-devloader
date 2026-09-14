@@ -104,6 +104,14 @@ jobs:
           Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile $wingetcreate
           $signature = Get-AuthenticodeSignature -LiteralPath $wingetcreate
           if ($signature.Status -ne 'Valid') { throw "Invalid wingetcreate Authenticode signature: $($signature.Status)" }
+          # One PR per package version: a pipeline re-run must not open a duplicate in winget-pkgs.
+          $env:GH_TOKEN = $env:WINGET_TOKEN
+          $existing = gh pr list --repo microsoft/winget-pkgs --state open --search "Sharafutdinov.RevitDevLoader version $env:RELEASE_VERSION in:title" --json number,title --jq ".[] | select(.title == \"Sharafutdinov.RevitDevLoader version $env:RELEASE_VERSION\") | .number" | Select-Object -First 1
+          if ($existing) {
+            Write-Host "A pull request for Sharafutdinov.RevitDevLoader $env:RELEASE_VERSION is already open: https://github.com/microsoft/winget-pkgs/pull/$existing"
+            $global:LASTEXITCODE = 0
+            exit 0
+          }
           $submitLog = Join-Path $env:RUNNER_TEMP 'wingetcreate-submit.txt'
           & $wingetcreate submit "build/release/winget/manifests/s/Sharafutdinov/RevitDevLoader/$env:RELEASE_VERSION" --token $env:WINGET_TOKEN 2>&1 | Tee-Object -FilePath $submitLog | Out-String | Write-Host
           if ($LASTEXITCODE -ne 0) { throw 'WinGet submission failed.' }
