@@ -20,7 +20,23 @@ For a visible bug, attach a screenshot of the dialog or ribbon and remove privat
 The PR checklist records build results, test and documentation changes, visual evidence and the absence of secrets.
 The first issue and first PR receive a welcome message with contribution guidance.
 Path labels identify the affected areas.
-Issues and PRs become stale after 60 days without activity and close 14 days later; `pinned` and `bug` are exempt.
+Issues and PRs become stale after 60 days without activity; `pinned` and `bug` are exempt.
+Stale issues close 14 days later.
+Stale PRs remain open.
+
+## Local checks
+
+Install pre-commit with `uv tool install pre-commit` or `pipx install pre-commit`.
+Install `actionlint` and the .NET SDK selected by [global.json](global.json), then run from the repository root:
+
+```shell
+pre-commit install
+pre-commit run --all-files
+```
+
+The hooks verify C# formatting and workflows and check file endings, trailing whitespace, YAML and JSON.
+The solution formatting check requires Windows for the Revit projects; macOS and Linux can run the other hooks, with Windows PR checks validating the solution.
+Run `dotnet format RevitDevLoader.sln` to fix C# formatting.
 
 ## Build from source
 
@@ -94,6 +110,12 @@ For the next release, rebuild with `-Version 1.1.0`, publish again and select **
 See [plugin package format](docs/plugin-package.md) for multiple commands, application packages and assembly selection, and [feed format](docs/feed-format.md) for the registry schema and the `New-DevLoaderPackage.ps1` and `Publish-DevLoaderFeed.ps1` tools.
 
 ## Automated checks
+
+Community greetings, path labels and stale handling call `sharafutdinovdi/.github/.github/workflows/community.yml@main`.
+Dependabot automation calls `sharafutdinovdi/.github/.github/workflows/dependabot-auto-merge.yml@main`.
+Failed checks on same-repository PRs call `sharafutdinovdi/.github/.github/workflows/check-failure-comment.yml@main` and update one comment with commands for the failed steps.
+Fork and Dependabot PRs skip the failure comment because their check tokens are read-only.
+Build artifact comments remain in this repository's PR checks workflow.
 
 PR checks reuse CI to build Legacy net48 hosts for Revit 2022–2024 and Modern net8 hosts for Revit 2025–2026, run the core and release layout tests, and package the ZIP and user and admin setup executables.
 Installer smoke tests verify silent installation and removal, manifest paths, component selection, preserved user data and rejection while Revit is running.
