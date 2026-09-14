@@ -3,6 +3,9 @@
 ## Revit compatibility
 
 The add-in targets the lowest stable Revit API build available for each supported year for compatibility with every patch of that year.
+Both add-in hosts use the .NET 8 logging packages, which also support .NET Framework 4.8 for Revit 2022-2024.
+The Modern host references `Microsoft.Extensions.Logging.Abstractions` assembly version `8.0.0.0` and uses `System.Diagnostics.DiagnosticSource` from Revit 2025-2026's .NET 8 runtime.
+The logging dependencies avoid higher-version conflicts with the runtime's preloaded `System.Diagnostics.DiagnosticSource` assembly.
 
 ## Discovery
 
