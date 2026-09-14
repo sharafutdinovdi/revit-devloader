@@ -4,12 +4,17 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -20,13 +25,15 @@ jobs:
       actions: write
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
       - uses: actions/setup-dotnet@v6.0.0
         with:
           global-json-file: global.json
       - name: Set release version
         shell: pwsh
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           if ($env:RELEASE_TAG -notmatch '^v(?<version>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)$') {
             throw 'Release tag must use vMAJOR.MINOR.PATCH with optional prerelease or build metadata.'
@@ -40,47 +47,12 @@ jobs:
         run: .\build\installer\package.ps1 -SkipBuild
       - name: Build installers
         run: .\build\installer\build-installers.ps1 -InstallIfMissing
-      # Highlights come from CHANGELOG.md; a missing section fails the release on purpose.
-      - name: Compose release notes
-        shell: bash
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-          REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          version="$RELEASE_VERSION"
-          section="$(awk -v v="$version" 'BEGIN { gsub(/\./, "\\.", v); re = "^## \\[?" v "\\]?( |$)" }
-            $0 ~ re { on = 1; next }
-            /^## / && on { exit }
-            on { print }' CHANGELOG.md)"
-          if [ -z "$(printf '%s' "$section" | tr -d '[:space:]')" ]; then
-            echo "CHANGELOG.md has no section for $version. Add '## [$version] - YYYY-MM-DD' before tagging." >&2
-            exit 1
-          fi
-          base="https://github.com/$REPO/releases/download/$RELEASE_TAG"
-          {
-            echo "## Highlights"
-            echo
-            printf '%s\n' "$section"
-            echo
-            echo "## Install"
-            echo
-            echo "- [User setup]($base/revit-devloader-$version-user-setup.exe): current Windows account, no elevation."
-            echo "- [Admin setup]($base/revit-devloader-$version-admin-setup.exe): all users on the machine."
-            echo "- [ZIP with install.ps1]($base/revit-devloader-$version.zip): scripted installs."
-            echo "- [SHA256SUMS.txt]($base/SHA256SUMS.txt) covers every asset above."
-            echo
-            echo "Close Revit before installing, then open **Add-Ins > DevLoader > Dev**."
-            echo
-            echo "---"
-          } > release-notes.md
-          cat release-notes.md
       - name: Publish GitHub Release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           $ErrorActionPreference = 'Stop'
           $version = $env:RELEASE_VERSION
@@ -96,16 +68,40 @@ jobs:
             "$hash  $([IO.Path]::GetFileName($asset))"
           }
           Set-Content -LiteralPath $checksumPath -Value $checksums -Encoding ascii
-          $releaseArgs = @('release', 'create', $env:RELEASE_TAG) + $assets + @($checksumPath, '--verify-tag', '--notes-file', 'release-notes.md', '--generate-notes', '--title', "Revit DevLoader $version")
-          if ($version -match '-') { $releaseArgs += '--prerelease' }
-          & gh @releaseArgs
+          $base = "https://github.com/$env:GH_REPO/releases/download/$env:RELEASE_TAG"
+          $installNotes = @"
+          <!-- devloader-install:start -->
+          ## Install
+
+          - [User setup]($base/revit-devloader-$version-user-setup.exe): current Windows account, no elevation.
+          - [Admin setup]($base/revit-devloader-$version-admin-setup.exe): all users on the machine.
+          - [ZIP with install.ps1]($base/revit-devloader-$version.zip): scripted installs.
+          - [SHA256SUMS.txt]($base/SHA256SUMS.txt) covers every asset above.
+
+          Close Revit before installing, then open **Add-Ins > DevLoader > Dev**.
+          <!-- devloader-install:end -->
+          "@
+          $existingNotes = gh release view $env:RELEASE_TAG --json body --jq .body
+          if ($LASTEXITCODE -eq 0) {
+            # Replace only the generated install block when retrying a release.
+            $notes = ($existingNotes -join "`n") -replace '(?s)<!-- devloader-install:start -->.*?<!-- devloader-install:end -->', ''
+            Set-Content -LiteralPath release-notes.md -Value "$($notes.TrimEnd())`n`n$installNotes" -Encoding utf8
+            & gh release upload $env:RELEASE_TAG @assets $checksumPath --clobber
+            if ($LASTEXITCODE -ne 0) { throw 'GitHub Release asset upload failed.' }
+            gh release edit $env:RELEASE_TAG --notes-file release-notes.md
+          } else {
+            Set-Content -LiteralPath release-notes.md -Value $installNotes -Encoding utf8
+            $releaseArgs = @('release', 'create', $env:RELEASE_TAG) + $assets + @($checksumPath, '--verify-tag', '--notes-file', 'release-notes.md', '--generate-notes', '--title', "Revit DevLoader $version")
+            if ($version -match '-') { $releaseArgs += '--prerelease' }
+            & gh @releaseArgs
+          }
           if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publishing failed.' }
       # Releases created with GITHUB_TOKEN do not trigger release workflows.
       - name: Dispatch WinGet manifests
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           gh workflow run winget.yml --ref $env:RELEASE_TAG -f "tag=$env:RELEASE_TAG"
           if ($LASTEXITCODE -ne 0) { throw 'WinGet workflow dispatch failed.' }
