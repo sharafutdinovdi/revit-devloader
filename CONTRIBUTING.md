@@ -11,7 +11,7 @@ This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md).
 1. Fork the repository and create a branch from `main`.
 2. Keep each change focused and use Conventional Commits, such as `fix(addin): handle an unavailable feed` or `docs: clarify installer usage`.
 3. Run the applicable checks below and update tests and documentation for changed behavior.
-4. Add a line under `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md) for every user-visible change.
+4. Describe each user-visible change in the Conventional Commit PR title; release-please generates [CHANGELOG.md](CHANGELOG.md).
 5. Open a PR against `main` with a Conventional Commit title, complete the PR template and link the issue.
 6. Attach a screenshot or recording for any UI or ribbon change in the template's validation section.
 
@@ -99,22 +99,34 @@ PR checks reuse CI to build Legacy net48 hosts for Revit 2022–2024 and Modern 
 Installer smoke tests verify silent installation and removal, manifest paths, component selection, preserved user data and rejection while Revit is running.
 The quality job checks the Conventional Commit PR title, validates workflows with `actionlint`, and runs `dotnet format --verify-no-changes` against the solution.
 CodeQL analyzes C# with the same SDK setup and build script as CI.
-The `main` branch requires a PR, an approving review and passing `CI / test`, `pr-checks` and `CodeQL (csharp)` checks; administrators can bypass these requirements.
+The `main` branch requires a PR, an up-to-date branch and passing required checks.
+PRs merge by squash with the PR title and body, preserving linear history.
+Owner review is required for application source, installer scripts, feed tools, the release, release-please, WinGet and Dependabot auto-merge workflows, CODEOWNERS, the security policy and the license.
+The source and test project files and root `Directory.Build.props` are exempt from owner review.
+Documentation, tests, samples, other CI workflows, README and changelog changes merge with green checks alone.
+The path rules are maintained in [CODEOWNERS](.github/CODEOWNERS).
 
 After successful PR checks, one build comment links to the Legacy, Modern and Installer artifacts and lists their Revit years.
 The Installer artifact contains the ZIP; the separate Installers artifact on the linked run contains the user and admin setup executables.
 The comment updates after each successful build of the current PR revision.
 Downloads require a GitHub sign-in and expire after 90 days.
-Weekly Dependabot PRs cover NuGet and GitHub Actions dependencies.
+Monthly Dependabot PRs cover NuGet and GitHub Actions dependencies.
+Patch and minor updates enable auto-merge and merge automatically after required checks pass and any required owner review is complete.
+Major updates receive the `needs-review` label and wait for a maintainer.
 
 ## Releases
 
-Releases are cut from `main` by a tag; the workflow refuses to publish without a matching changelog section.
+1. Merge PRs with Conventional Commit titles into `main`.
+2. release-please maintains a `chore(main): release X.Y.Z` PR with the generated changelog and version update.
+3. The maintainer selects **Approve workflows to run** if GitHub requests it on the generated PR, then merges the release PR after its checks pass to publish the `vX.Y.Z` tag and GitHub release.
+4. The Release workflow builds all Revit years, runs the tests, and attaches the ZIP, user and admin setup executables and `SHA256SUMS.txt` with install links.
+5. The workflow dispatches WinGet manifest generation and submission when `WINGET_TOKEN` is configured; prereleases skip submission.
 
-1. Move the `## [Unreleased]` entries in [CHANGELOG.md](CHANGELOG.md) into a new `## [X.Y.Z] - YYYY-MM-DD` section and update the comparison links at the bottom.
-2. Merge that change, then tag the merge commit: `git tag vX.Y.Z && git push origin vX.Y.Z`.
-3. The Release workflow builds all Revit years, runs the tests, packages the ZIP and both setup executables, writes `SHA256SUMS.txt`, and publishes the GitHub release with a Highlights section taken from the changelog, direct install links and the generated list of merged pull requests.
-4. The same workflow dispatches the WinGet workflow, which generates manifests and submits them when `WINGET_TOKEN` is configured. Prereleases (`vX.Y.Z-beta.1`) are marked as such and skip WinGet.
+During 0.x development, `feat` bumps the minor version and `fix` bumps the patch version.
+
+release-please owns [CHANGELOG.md](CHANGELOG.md) and [version.txt](version.txt); neither file is edited by hand.
+The release workflow also accepts manually pushed tags and replaces existing release assets on retries.
+Existing release notes are preserved, and the generated Install section is replaced on each retry.
 
 ## Documentation
 

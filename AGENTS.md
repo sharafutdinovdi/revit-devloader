@@ -43,7 +43,7 @@ Windows-only steps (Revit builds, Inno Setup, installer smoke tests) run in GitH
 
 - Conventional Commits for commits and PR titles: `feat(addin): ...`, `fix(core): ...`, `ci: ...`, `docs: ...`.
 - English everywhere. Sentence-case headings, short sentences, no em dashes.
-- Every behavior change comes with a test in `tests/RevitDevLoader.Core.Tests` and a line under `## [Unreleased]` in `CHANGELOG.md`.
+- Every behavior change comes with a test in `tests/RevitDevLoader.Core.Tests` and a Conventional Commit title that describes the change.
 - Follow `.editorconfig`; run `dotnet format` before committing.
 - Revit API types stay in the add-in projects. Core and tests never reference `RevitAPI.dll` or `RevitAPIUI.dll`.
 - No Autodesk assemblies in any artifact; the packaging scripts and CI assert this.
@@ -59,4 +59,8 @@ Windows-only steps (Revit builds, Inno Setup, installer smoke tests) run in GitH
 
 ## Releases
 
-Version and date come from `CHANGELOG.md`. A maintainer moves `## [Unreleased]` into `## [X.Y.Z] - YYYY-MM-DD`, merges, and pushes tag `vX.Y.Z`. The Release workflow fails on purpose when the changelog section is missing. Agents never push tags.
+release-please owns `CHANGELOG.md` and `version.txt`; agents never edit them by hand.
+Conventional Commit titles determine the release notes and version in the release PR.
+A maintainer merges that PR to create the `vX.Y.Z` tag and GitHub release.
+The Release workflow builds and uploads the installers, ZIP and checksums, then dispatches WinGet.
+Agents never push tags.
