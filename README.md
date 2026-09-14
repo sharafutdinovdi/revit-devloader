@@ -4,6 +4,8 @@ For Revit add-in developers who test builds across Revit 2022-2026: install vers
 
 [![CI](https://img.shields.io/github/actions/workflow/status/sharafutdinovdi/revit-devloader/ci.yml?style=flat-square&label=CI)](https://github.com/sharafutdinovdi/revit-devloader/actions/workflows/ci.yml) [![CodeQL](https://img.shields.io/github/actions/workflow/status/sharafutdinovdi/revit-devloader/codeql.yml?style=flat-square&label=CodeQL)](https://github.com/sharafutdinovdi/revit-devloader/actions/workflows/codeql.yml) [![Release](https://img.shields.io/github/v/release/sharafutdinovdi/revit-devloader?style=flat-square)](https://github.com/sharafutdinovdi/revit-devloader/releases/latest) [![Downloads](https://img.shields.io/github/downloads/sharafutdinovdi/revit-devloader/total?style=flat-square)](https://github.com/sharafutdinovdi/revit-devloader/releases) ![Revit 2022-2026](https://img.shields.io/badge/Revit-2022--2026-005FB8?style=flat-square) ![.NET 4.8 and 8](https://img.shields.io/badge/.NET-4.8%20%7C%208-512BD4?style=flat-square) ![Tests](https://img.shields.io/badge/tests-170%20xUnit-2EA043?style=flat-square) [![MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/sharafutdinovdi/revit-devloader/badge)](https://scorecard.dev/viewer/?uri=github.com/sharafutdinovdi/revit-devloader)
+
 ## Install
 
 1. Download `revit-devloader-<version>-user-setup.exe` from the [latest release](https://github.com/sharafutdinovdi/revit-devloader/releases/latest). Use `revit-devloader-<version>-admin-setup.exe` to install for all users on the machine.
@@ -11,6 +13,8 @@ For Revit add-in developers who test builds across Revit 2022-2026: install vers
 3. Start Revit and open **Add-Ins > DevLoader > Dev**.
 
 The release also carries `revit-devloader-<version>.zip` with `install.ps1` for scripted installs and `SHA256SUMS.txt` for every asset; see the [installer guide](build/installer/README.md). After the WinGet listing is accepted, `winget install Sharafutdinov.RevitDevLoader` installs the same user setup.
+
+[Verify downloads](build/installer/README.md#verify-downloads) with GitHub CLI to check the build provenance before installing.
 
 **First feed.** Open **Settings** in the manager and enter a feed repository, release tag and `feed.json` asset name. The demo feed is repository `sharafutdinovdi/revit-devloader`, tag `demo-feed`, asset `feed.json`; it lists three sample plugins for Revit 2025 and 2026. GitHub release feeds need GitHub CLI in PATH and `gh auth login` on that Windows account. There is no default feed.
 

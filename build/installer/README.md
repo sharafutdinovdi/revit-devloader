@@ -4,6 +4,23 @@ Close Revit before installing or removing the loader.
 Releases provide unsigned Inno Setup installers and a ZIP with PowerShell scripts.
 `SHA256SUMS.txt` contains the SHA256 hashes of the ZIP and both installers.
 
+## Verify downloads
+
+Release assets have GitHub build provenance attestations for the ZIP, both setup executables and `SHA256SUMS.txt`.
+With [GitHub CLI](https://cli.github.com/) installed, replace `<version>` with the downloaded release version and run:
+
+```powershell
+gh attestation verify revit-devloader-<version>-user-setup.exe --owner sharafutdinovdi
+```
+
+Repeat the command with each downloaded asset's filename.
+Successful verification binds the downloaded file's digest to the workflow and source commit shown in the output.
+Check that the output identifies `sharafutdinovdi/revit-devloader` and its `.github/workflows/release.yml` workflow at the expected commit.
+The owner constraint accepts attestations from any repository owned by `sharafutdinovdi`; it does not select this repository alone.
+These attestations are not Authenticode signatures.
+Windows SmartScreen warnings and Revit's unsigned add-in dialog still appear.
+Older releases published before attestations were enabled do not have them.
+
 ## Setup executables
 
 | Asset | Scope | Add-in directory |
