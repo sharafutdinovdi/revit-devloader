@@ -149,20 +149,20 @@ jobs:
           }
       - name: Upload installer smoke logs on failure
         if: failure()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: Installer-smoke-logs
           path: ${{ runner.temp }}/devloader-*-install.log
           if-no-files-found: ignore
       - name: Upload installers
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: Installers
           path: build/release/packages/*-setup.exe
           retention-days: 90
           if-no-files-found: error
       - name: Upload Legacy add-ins
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: Legacy
           path: |
@@ -172,7 +172,7 @@ jobs:
           retention-days: 90
           if-no-files-found: error
       - name: Upload Modern add-ins
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: Modern
           path: |
@@ -181,7 +181,7 @@ jobs:
           retention-days: 90
           if-no-files-found: error
       - name: Upload installer
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: Installer
           path: build/release/packages/*.zip

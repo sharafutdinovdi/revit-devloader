@@ -86,7 +86,7 @@ jobs:
           "install_tested=$tested" >> $env:GITHUB_OUTPUT
           $global:LASTEXITCODE = 0
       - name: Upload WinGet manifests
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: WinGet-manifests
           path: build/release/winget/manifests/
